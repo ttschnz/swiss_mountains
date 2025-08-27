@@ -6,6 +6,6 @@ A python project that accesses [swissALTI3D](https://opendata.swiss/de/dataset/s
 
 ## Timeline
 - [ ] Optimize for speed
-- [ ] Export to anki-flashcards
+- [x] Export to anki-flashcards
 - [ ] Dockerize
 - [ ] web-api

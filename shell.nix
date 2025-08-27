@@ -15,6 +15,7 @@ pkgs.mkShell {
       ps.requests
       ps.pillow
       ps.imageio
+      ps.genanki
     ]))
     pkgs.pyenv
     pkgs.virtualenv
