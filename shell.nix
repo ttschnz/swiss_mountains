@@ -14,11 +14,14 @@ pkgs.mkShell {
       ps.scipy
       ps.requests
       ps.pillow
+      ps.imageio
     ]))
     pkgs.pyenv
     pkgs.virtualenv
     pkgs.sqlite
     pkgs.jupyter-all
+    pkgs.imagemagick
+    pkgs.git-lfs
   ];
 
   shellHook = ''
