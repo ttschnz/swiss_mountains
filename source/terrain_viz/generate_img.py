@@ -1,3 +1,6 @@
+import os
+import imageio.v2 as imageio
+
 import numpy as np
 from scipy.spatial import cKDTree
 
@@ -109,6 +112,9 @@ def generate_img(south,north,west,east, name, step=100, offline=False, dpi=300):
 
     ax.axis('off')
 
+    print("exporting static image")
+    plt.savefig(f'{PLOT_PATH}/{name}.png', bbox_inches='tight', pad_inches=0, transparent=True, dpi=dpi)
+
     # function to rotate
     def rotate(angle):
         ax.view_init(elev=30, azim=angle)
@@ -117,5 +123,15 @@ def generate_img(south,north,west,east, name, step=100, offline=False, dpi=300):
     # create animation
     ani = animation.FuncAnimation(fig, rotate, frames=range(0, 360), interval=50)
 
-    # save gif
-    ani.save(f"{PLOT_PATH}/{name}.gif", writer='pillow', dpi=dpi)
+    print("writing animation")
+    tmp_dir = f"{PLOT_PATH}/frames_{name}"
+    os.makedirs(tmp_dir, exist_ok=True)
+    frames = []
+    for angle in range(0, 360, 2):  # step = frame skip
+        ax.view_init(elev=30, azim=angle)
+        fname = f"{tmp_dir}/frame_{angle:03d}.png"
+        plt.savefig(fname, transparent=True, dpi=dpi)
+        frames.append(imageio.imread(fname))
+    imageio.mimsave(f"{PLOT_PATH}/{name}.webp", frames, duration=0.05, loop=0, lossless=True)
+    ani.save(f"{PLOT_PATH}/{name}.webp", writer="imagemagick", dpi=dpi)
+    plt.close(fig)

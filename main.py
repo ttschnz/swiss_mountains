@@ -10,4 +10,4 @@ niesen = (
     2620431, # east
 )
 
-generate_img(*niesen, 'Niesen', step=10, offline=True)
+generate_img(*niesen, 'Niesen', step=100, offline=True)
