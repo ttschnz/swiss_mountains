@@ -9,3 +9,4 @@ A python project that accesses [swissALTI3D](https://opendata.swiss/de/dataset/s
 - [x] Export to anki-flashcards
 - [ ] Dockerize
 - [ ] web-api
+- [ ] Documentation, inline comments

@@ -1,34 +1,39 @@
 import sqlite3
-from contextlib import closing, nullcontext
+from contextlib import closing
 from typing import Optional, Tuple, List
 DB_PATH = "./cache/swissalti3d.sqlite3"
+
+initialized = False
 
 def _get_connection():
     return sqlite3.connect(DB_PATH)
 
 
 def initialize_cache():
-    with closing(_get_connection()) as conn:
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS swissalti3d_references (
-                id TEXT NOT NULL,
-                modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            )
-        ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS swissalti3d_data (
-                x INTEGER NOT NULL,
-                y INTEGER NOT NULL,
-                z FLOAT NOT NULL,
-                reference_id TEXT,
-                modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (x, y),
-                FOREIGN KEY (reference_id) REFERENCES swissalti3d_references(id)
-            )
-        ''')
-        conn.commit()
+    global initialized
+    if not initialized:
+        with closing(_get_connection()) as conn:
+            c = conn.cursor()
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS swissalti3d_references (
+                    id TEXT NOT NULL,
+                    modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id)
+                )
+            ''')
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS swissalti3d_data (
+                    x INTEGER NOT NULL,
+                    y INTEGER NOT NULL,
+                    z FLOAT NOT NULL,
+                    reference_id TEXT,
+                    modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (x, y),
+                    FOREIGN KEY (reference_id) REFERENCES swissalti3d_references(id)
+                )
+            ''')
+            conn.commit()
+            initialized = True
 
 def get_from_cache(x: int,y: int)->Optional[float]:
     with closing(_get_connection()) as conn:

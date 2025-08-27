@@ -1,4 +1,5 @@
 import os
+from typing_extensions import Optional
 import imageio.v2 as imageio
 
 import numpy as np
@@ -27,7 +28,7 @@ examples = {
     )
 }
 
-def generate_img(south,north,west,east, name, step=100, offline=False, dpi=300, static=True, animated_extension="webp"):
+def generate_img(south: int, north: int, west: int, east: int, name: str, step: int = 100, offline: bool = False, dpi: int = 300, static: bool = True, animated_extension: Optional[str]="webp"):
     bounding_box = [south, north, west, east]
     if not offline:
         # cache altitude points
@@ -36,7 +37,7 @@ def generate_img(south,north,west,east, name, step=100, offline=False, dpi=300, 
         for url in url_list:
             print(f"caching {url_to_ref(url)}")
             swissalti3d.fetch.fetch_and_extract(url)
-        quit()
+
         # cache colors
         img_url_list = swissimage.fetch.get_url_list((bounding_box[0],bounding_box[1]),(bounding_box[2],bounding_box[3]))
         for url in img_url_list:
@@ -108,7 +109,7 @@ def generate_img(south,north,west,east, name, step=100, offline=False, dpi=300, 
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
 
-    ax.set_box_aspect((1, 1, 1/2))
+    ax.set_box_aspect((1, 1, 1/2.75))
 
     ax.axis('off')
 
@@ -116,15 +117,17 @@ def generate_img(south,north,west,east, name, step=100, offline=False, dpi=300, 
         print("exporting static image")
         plt.savefig(f'{PLOT_PATH}/{name}.png', bbox_inches='tight', pad_inches=0, transparent=True, dpi=dpi)
 
-    print("animating rotation")
-    tmp_dir = f"{PLOT_PATH}/frames_{name}"
-    os.makedirs(tmp_dir, exist_ok=True)
-    frames = []
-    for angle in range(0, 360, 2):  # step = frame skip
-        ax.view_init(elev=30, azim=angle)
-        fname = f"{tmp_dir}/frame_{angle:03d}.png"
-        plt.savefig(fname, transparent=False, dpi=dpi)
-        frames.append(imageio.imread(fname))
-    imageio.mimsave(f"{PLOT_PATH}/{name}.{animated_extension}", frames, duration=0.05, loop=0, lossless=True)
-    #ani.save(f"{PLOT_PATH}/{name}.webp", writer="imagemagick", dpi=dpi)
+    if not (animated_extension is None):
+        print("animating rotation")
+        tmp_dir = f"{PLOT_PATH}/frames_{name}"
+        os.makedirs(tmp_dir, exist_ok=True)
+        frames = []
+        for angle in range(0, 360, 2):  # step = frame skip
+            ax.view_init(elev=30, azim=angle)
+            fname = f"{tmp_dir}/frame_{angle:03d}.png"
+            plt.savefig(fname, transparent=False, dpi=dpi)
+            frames.append(imageio.imread(fname))
+        imageio.mimsave(f"{PLOT_PATH}/{name}.{animated_extension}", frames, duration=0.05, loop=0, lossless=True)
+        #ani.save(f"{PLOT_PATH}/{name}.webp", writer="imagemagick", dpi=dpi)
+
     plt.close(fig)
