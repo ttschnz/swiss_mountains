@@ -1,5 +1,5 @@
-from source.terrain_viz import generate_img
-
+from source.terrain_viz import generate_img,PLOT_PATH
+from source.anki_export import create_deck
 # Niesen:
 # West North 2'613'742.33, 1'168'713.47
 # East South 2'620'431.12, 1'161'331.14
@@ -10,4 +10,5 @@ niesen = (
     2620431, # east
 )
 
-generate_img(*niesen, 'Niesen', step=100, offline=True)
+generate_img(*niesen, 'Niesen', step=100, offline=True, static=False, animated_extension="gif")
+create_deck(["Niesen"], [f"{PLOT_PATH}/Niesen.gif"], "niesen")

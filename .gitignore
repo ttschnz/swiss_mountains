@@ -199,3 +199,4 @@ cython_debug/
 # Cache & outputs
 cache
 plots
+anki
