@@ -1,36 +1,41 @@
 import sqlite3
-from contextlib import closing, nullcontext
+from contextlib import closing
 from typing import Optional, Tuple, List
 DB_PATH = "./cache/swissimage.sqlite3"
+
+initialized = False
 
 def _get_connection():
     return sqlite3.connect(DB_PATH)
 
 
 def initialize_cache():
-    with closing(_get_connection()) as conn:
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS swissimage_references (
-                id TEXT NOT NULL,
-                modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            )
-        ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS swissimage_data (
-                x INTEGER NOT NULL,
-                y INTEGER NOT NULL,
-                r INTEGER NOT NULL,
-                g INTEGER NOT NULL,
-                b INTEGER NOT NULL,
-                reference_id TEXT,
-                modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (x, y),
-                FOREIGN KEY (reference_id) REFERENCES swissimage_references(id)
-            )
-        ''')
-        conn.commit()
+    global initialized
+    if not initialized:
+        with closing(_get_connection()) as conn:
+            c = conn.cursor()
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS swissimage_references (
+                    id TEXT NOT NULL,
+                    modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id)
+                )
+            ''')
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS swissimage_data (
+                    x INTEGER NOT NULL,
+                    y INTEGER NOT NULL,
+                    r INTEGER NOT NULL,
+                    g INTEGER NOT NULL,
+                    b INTEGER NOT NULL,
+                    reference_id TEXT,
+                    modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (x, y),
+                    FOREIGN KEY (reference_id) REFERENCES swissimage_references(id)
+                )
+            ''')
+            conn.commit()
+            initialized = True
 
 def get_from_cache(x: int,y: int)->Optional[Tuple[int, int, int]]:
     with closing(_get_connection()) as conn:
