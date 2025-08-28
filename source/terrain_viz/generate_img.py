@@ -1,6 +1,6 @@
 import os
 from typing_extensions import Optional
-from config.constants import ELEVATION_ANGLE, FOCAL_LENGTH
+from config.constants import ELEVATION_ANGLE, FOCAL_LENGTH, DPI
 import imageio.v2 as imageio
 
 import numpy as np
@@ -29,7 +29,7 @@ examples = {
     )
 }
 
-def generate_img(south: int, north: int, west: int, east: int, name: str, width: int = 100, offline: bool = False, dpi: int = 300, static: bool = True, animated_extension: Optional[str]="webp"):
+def generate_img(south: int, north: int, west: int, east: int, name: str, width: int = 100, offline: bool = False, static: bool = True, animated_extension: Optional[str]="webp"):
     total_width = east - west
     step = total_width // width
 
@@ -120,7 +120,7 @@ def generate_img(south: int, north: int, west: int, east: int, name: str, width:
 
     if static:
         print("exporting static image")
-        plt.savefig(f'{PLOT_PATH}/{name}.png', bbox_inches='tight', pad_inches=0, transparent=True, dpi=dpi)
+        plt.savefig(f'{PLOT_PATH}/{name}.png', bbox_inches='tight', pad_inches=0, transparent=True, dpi=DPI)
 
     if not (animated_extension is None):
         print("animating rotation")
@@ -130,7 +130,7 @@ def generate_img(south: int, north: int, west: int, east: int, name: str, width:
         for angle in range(0, 360, 2):  # step = frame skip
             ax.view_init(elev=ELEVATION_ANGLE, azim=angle)
             fname = f"{tmp_dir}/frame_{angle:03d}.png"
-            plt.savefig(fname, transparent=False, dpi=dpi)
+            plt.savefig(fname, transparent=False, dpi=DPI)
             frames.append(imageio.imread(fname))
         imageio.mimsave(f"{PLOT_PATH}/{name}.{animated_extension}", frames, duration=0.05, loop=0, lossless=True)
         #ani.save(f"{PLOT_PATH}/{name}.webp", writer="imagemagick", dpi=dpi)
