@@ -36,13 +36,13 @@ def generate_img(south: int, north: int, west: int, east: int, name: str, step: 
         url_list = swissalti3d.fetch.get_url_list((bounding_box[0],bounding_box[1]),(bounding_box[2],bounding_box[3]))
         for url in url_list:
             print(f"caching {url_to_ref(url)}")
-            swissalti3d.fetch.fetch_and_extract(url)
+            swissalti3d.fetch.prefetch(url)
 
         # cache colors
         img_url_list = swissimage.fetch.get_url_list((bounding_box[0],bounding_box[1]),(bounding_box[2],bounding_box[3]))
         for url in img_url_list:
             print(f"caching {url_to_ref(url)}")
-            swissimage.fetch.fetch_and_extract(url)
+            swissimage.fetch.prefetch(url)
 
     print("fetching altitude points from cache")
     # get points inside range

@@ -16,7 +16,7 @@ from utils.box import Box, get_box_covered
 URL_LIST_PATH = 'source/swissimage/ch.swisstopo.swissimage.csv'
 
 
-def fetch_and_extract(url: str)->List[Tuple[Tuple[int,int],Tuple[int, int, int]]]:
+def prefetch(url: str):
     """
     Downloads points or reads them from cache, by reference / url.
     """
@@ -24,9 +24,9 @@ def fetch_and_extract(url: str)->List[Tuple[Tuple[int,int],Tuple[int, int, int]]
 
     # check if the url is already cached
     reference = utils.url_to_ref(url)
-    cached_data = cache.get_many_from_cache(reference)
-    if cached_data is not None: # outData: Option[List[Tuple[int, int, int, int, int]]]
-        return [((x,y),(r,g,b)) for (x,y,r,g,b) in cached_data]
+    cached_data = cache.check_cache(reference)
+    if cached_data is not None:
+        return
 
     print(f"downloading {reference}")
     response = requests.get(url)
@@ -47,8 +47,6 @@ def fetch_and_extract(url: str)->List[Tuple[Tuple[int,int],Tuple[int, int, int]]
                 out_data.append(((x,y), tuple(color)))
 
     cache.write_many_to_cache(out_data, reference)
-
-    return out_data
 
 def get_url_list(latitude_range: Tuple[int, int], longitude_range:Tuple[int, int])->List[str]:
     url_list = []

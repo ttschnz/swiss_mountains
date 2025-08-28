@@ -38,18 +38,20 @@ def initialize_cache():
             initialized = True
 
 def get_from_cache(x: int,y: int)->Optional[Tuple[int, int, int]]:
+    initialize_cache()
     with closing(_get_connection()) as conn:
         c = conn.cursor()
         c.execute('SELECT r, g, b FROM swissimage_data WHERE x = ? AND y = ?', (x,y))
         data = c.fetchone()
         return (int(data[0]),int(data[1]),int(data[2])) if data is not None else None
 
-def get_many_from_cache(reference: str)-> Optional[List[Tuple[int,int,int,int,int]]]:
+def check_cache(reference: str)-> Optional[Tuple[int]]:
+    initialize_cache()
     with closing(_get_connection()) as conn:
         c = conn.cursor()
-        c.execute('SELECT x, y, r, g, b FROM swissimage_data WHERE reference_id IS ?', (reference,))
-        data = c.fetchall()
-        return data if len(data) > 0 else None
+        c.execute('SELECT modify_at FROM swissimage_references WHERE id IS ?', (reference,))
+        modify_at = c.fetchone()
+        return modify_at
 
 def get_many_from_cache_filtered(**kwargs)-> Optional[List[Tuple[int,int,int,int,int]]]:
     step = kwargs['step'] or 0;
@@ -58,6 +60,7 @@ def get_many_from_cache_filtered(**kwargs)-> Optional[List[Tuple[int,int,int,int
     miny = kwargs['miny'];
     maxy = kwargs['maxy'];
 
+    initialize_cache()
     with closing(_get_connection()) as conn:
         c = conn.cursor()
         if None not in [minx, maxx, miny, maxy]:
@@ -84,6 +87,7 @@ def get_many_from_cache_filtered(**kwargs)-> Optional[List[Tuple[int,int,int,int
 
 
 def write_to_cache(x: int, y: int, color: Tuple[int,int,int], **kwargs):
+    initialize_cache()
     reference = str(kwargs.get('reference', None));
     with closing(_get_connection()) as conn:
         c = conn.cursor()
@@ -93,6 +97,7 @@ def write_to_cache(x: int, y: int, color: Tuple[int,int,int], **kwargs):
         conn.commit()
 
 def write_many_to_cache(data: List[Tuple[Tuple[int,int],Tuple[int,int,int]]], reference: str):
+    initialize_cache()
     with closing(_get_connection()) as conn:
         c = conn.cursor()
         c.execute('INSERT OR REPLACE INTO swissimage_references (id) VALUES (?)', (reference,))

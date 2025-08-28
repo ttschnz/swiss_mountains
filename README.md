@@ -5,7 +5,7 @@ A python project that accesses [swissALTI3D](https://opendata.swiss/de/dataset/s
 ![Example output: Animation of the mountain Niesen](docs/assets/Niesen.webp)
 
 ## Timeline
-- [ ] Optimize for speed
+- [x] Optimize for speed
 - [x] Export to anki-flashcards
 - [ ] Dockerize
 - [ ] web-api

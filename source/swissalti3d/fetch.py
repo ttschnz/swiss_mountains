@@ -16,7 +16,7 @@ URL_LIST_PATH = 'source/swissalti3d/ch.swisstopo.swissalti3d.csv'
 
 
 
-def fetch_and_extract(url: str)->List[Tuple[int,int,float]]:
+def prefetch(url: str):
     """
     Downloads points or reads them from cache, by reference / url.
     """
@@ -24,9 +24,9 @@ def fetch_and_extract(url: str)->List[Tuple[int,int,float]]:
 
     # check if the url is already cached
     reference = utils.url_to_ref(url)
-    outData = cache.get_many_from_cache(reference)
+    outData = cache.check_cache(reference)
     if outData is not None:
-        return outData
+        return
 
     print(f"downloading {reference}")
     response = requests.get(url)
@@ -44,8 +44,6 @@ def fetch_and_extract(url: str)->List[Tuple[int,int,float]]:
                 outData.append((x,y,z))
 
     cache.write_many_to_cache(outData, reference)
-
-    return outData
 
 def get_url_list(latitude_range: Tuple[int, int], longitude_range:Tuple[int, int])->List[str]:
     url_list = []

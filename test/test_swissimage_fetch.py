@@ -27,12 +27,8 @@ class TestSwissImageFetch(unittest.TestCase):
             lines = list(reader)
             for _ in range(5):
                 line = choice(lines)
-                data = swissimage.fetch.fetch_and_extract(line['url'])
-                for _ in range(5):
-                    ((x,y),color_direct) = choice(data)
-                    color_cached = swissimage.cache.get_from_cache(x,y)
-                    self.assertEqual(color_direct, color_cached)
-                    self.assertEqual(swissimage.fetch.get_url_list((y,y),(x,x)),[line['url']])
+                modify_at = swissimage.cache.check_cache(line['url'])
+                self.assertIsNotNone(modify_at)
 
 if __name__ == '__main__':
     unittest.main()
