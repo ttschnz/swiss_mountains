@@ -1,5 +1,6 @@
 import os
 from typing_extensions import Optional
+from config.constants import ELEVATION_ANGLE, FOCAL_LENGTH
 import imageio.v2 as imageio
 
 import numpy as np
@@ -28,7 +29,10 @@ examples = {
     )
 }
 
-def generate_img(south: int, north: int, west: int, east: int, name: str, step: int = 100, offline: bool = False, dpi: int = 300, static: bool = True, animated_extension: Optional[str]="webp"):
+def generate_img(south: int, north: int, west: int, east: int, name: str, width: int = 100, offline: bool = False, dpi: int = 300, static: bool = True, animated_extension: Optional[str]="webp"):
+    total_width = east - west
+    step = total_width // width
+
     bounding_box = [south, north, west, east]
     if not offline:
         # cache altitude points
@@ -102,7 +106,7 @@ def generate_img(south: int, north: int, west: int, east: int, name: str, step: 
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection="3d")
 
-    mesh = Poly3DCollection(polys, facecolors=face_colors, linewidths=0.2, alpha=1.0)
+    mesh = Poly3DCollection(polys, facecolors=face_colors, linewidths=0, edgecolors="none", alpha=1.0)
     ax.add_collection3d(mesh)
 
     ax.set_xlabel("X")
@@ -110,6 +114,7 @@ def generate_img(south: int, north: int, west: int, east: int, name: str, step: 
     ax.set_zlabel("Z")
 
     ax.set_box_aspect((1, 1, 1/2.75))
+    ax.set_proj_type('persp', focal_length=FOCAL_LENGTH)
 
     ax.axis('off')
 
@@ -123,7 +128,7 @@ def generate_img(south: int, north: int, west: int, east: int, name: str, step: 
         os.makedirs(tmp_dir, exist_ok=True)
         frames = []
         for angle in range(0, 360, 2):  # step = frame skip
-            ax.view_init(elev=30, azim=angle)
+            ax.view_init(elev=ELEVATION_ANGLE, azim=angle)
             fname = f"{tmp_dir}/frame_{angle:03d}.png"
             plt.savefig(fname, transparent=False, dpi=dpi)
             frames.append(imageio.imread(fname))
