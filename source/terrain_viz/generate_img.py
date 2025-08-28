@@ -1,6 +1,7 @@
 import os
+from typing import Tuple
 from typing_extensions import Optional
-from config.constants import ELEVATION_ANGLE, FOCAL_LENGTH, DPI
+from config.constants import ELEVATION_ANGLE, FOCAL_LENGTH, DPI, Z_DISTORTION
 import imageio.v2 as imageio
 
 import numpy as np
@@ -29,23 +30,26 @@ examples = {
     )
 }
 
-def generate_img(south: int, north: int, west: int, east: int, name: str, width: int = 100, offline: bool = False, static: bool = True, animated_extension: Optional[str]="webp"):
-    total_width = east - west
+
+def generate_img(peak_coordinates: Tuple[int,int], radius:int, name: str, width: int = 100, offline: bool = False, static: bool = True, animated_extension: Optional[str]="webp"):
+    peak_north = min(peak_coordinates)
+    peak_east = max(peak_coordinates)
+
+    bounding_box = [peak_north-radius, peak_north+radius, peak_east-radius, peak_east+radius] # [south, north, west, east]
+    total_width = bounding_box[3] - bounding_box[2] # east-west
+
     step = total_width // width
 
-    bounding_box = [south, north, west, east]
     if not offline:
         # cache altitude points
         swissalti3d.cache.initialize_cache()
         url_list = swissalti3d.fetch.get_url_list((bounding_box[0],bounding_box[1]),(bounding_box[2],bounding_box[3]))
         for url in url_list:
-            print(f"caching {url_to_ref(url)}")
             swissalti3d.fetch.prefetch(url)
 
         # cache colors
         img_url_list = swissimage.fetch.get_url_list((bounding_box[0],bounding_box[1]),(bounding_box[2],bounding_box[3]))
         for url in img_url_list:
-            print(f"caching {url_to_ref(url)}")
             swissimage.fetch.prefetch(url)
 
     print("fetching altitude points from cache")
@@ -53,6 +57,10 @@ def generate_img(south: int, north: int, west: int, east: int, name: str, width:
     data = swissalti3d.cache.get_many_from_cache_filtered(step=step, minx=bounding_box[2], maxx=bounding_box[3], miny=bounding_box[0],maxy=bounding_box[1])
     if data is None:
         data = []
+
+    # make the data a circle around the peak
+    data = list(filter(lambda p: (p[0]-peak_east)**2+(p[1]-peak_north)**2 < radius**2, data))
+    print(f"{len(data)} data points left in circle")
 
     print("fetching colors from cache")
     # get colors inside range
@@ -113,7 +121,7 @@ def generate_img(south: int, north: int, west: int, east: int, name: str, width:
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
 
-    ax.set_box_aspect((1, 1, 1/2.75))
+    ax.set_box_aspect((1, 1, 1/Z_DISTORTION))
     ax.set_proj_type('persp', focal_length=FOCAL_LENGTH)
 
     ax.axis('off')
