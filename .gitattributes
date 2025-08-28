@@ -1,1 +1,2 @@
 docs/assets/Niesen.webp filter=lfs diff=lfs merge=lfs -text
+source/swissnames3d_pkt/swissNAMES3D_PKT.csv filter=lfs diff=lfs merge=lfs -text
