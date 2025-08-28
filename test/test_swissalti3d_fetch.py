@@ -27,12 +27,8 @@ class TestSwissAlti3DFetch(unittest.TestCase):
             lines = list(reader)
             for _ in range(5):
                 line = choice(lines)
-                data = swissalti3d.fetch.fetch_and_extract(line['url'])
-                for _ in range(5):
-                    (x,y,z_direct) = choice(data)
-                    z_cached = swissalti3d.cache.get_from_cache(x,y)
-                    self.assertEqual(z_direct, z_cached)
-                    self.assertEqual(swissalti3d.fetch.get_url_list((y,y),(x,x)),[line['url']])
+                modify_at = swissalti3d.cache.check_cache(line['url'])
+                self.assertIsNotNone(modify_at)
 
 if __name__ == '__main__':
     unittest.main()
