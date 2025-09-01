@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 OBJECT_TYPES = [
     #"Gipfel",
-    #"Alpiner Gipfel",
+    "Alpiner Gipfel",
     "Hauptgipfel",
 ]
 

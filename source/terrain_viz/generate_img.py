@@ -123,6 +123,7 @@ def generate_img(peak_coordinates: Tuple[int,int], radius:int, name: str, width:
 
     ax.set_box_aspect((1, 1, 1/Z_DISTORTION))
     ax.set_proj_type('persp', focal_length=FOCAL_LENGTH)
+    ax.view_init(elev=ELEVATION_ANGLE)
 
     ax.axis('off')
 
@@ -138,7 +139,7 @@ def generate_img(peak_coordinates: Tuple[int,int], radius:int, name: str, width:
         for angle in range(0, 360, 2):  # step = frame skip
             ax.view_init(elev=ELEVATION_ANGLE, azim=angle)
             fname = f"{tmp_dir}/frame_{angle:03d}.png"
-            plt.savefig(fname, transparent=False, dpi=DPI)
+            plt.savefig(fname, transparent=False, bbox_inches='tight', pad_inches=0, dpi=DPI)
             frames.append(imageio.imread(fname))
         imageio.mimsave(f"{PLOT_PATH}/{name}.{animated_extension}", frames, duration=0.05, loop=0, lossless=True)
         #ani.save(f"{PLOT_PATH}/{name}.webp", writer="imagemagick", dpi=dpi)

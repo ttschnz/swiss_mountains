@@ -1,8 +1,9 @@
-from source.terrain_viz import generate_img,PLOT_PATH
+from source.terrain_viz import generate_img, PLOT_PATH
 from source.anki_export import create_deck
 from source.swissnames3d_pkt import get_peaks
 
 if __name__ == '__main__':
+    #center = (1199436, 2600340)
     center = (1199436, 2600340)
     peak_inclusion_radius = 20000
 
@@ -16,8 +17,7 @@ if __name__ == '__main__':
         radius = peak_height*2
 
         print(f"generating image for {name}")
-        #generate_img(south, north, west, east, name, width=160, offline=False, static=True, animated_extension='gif')
-        #generate_img((north, east), radius, name, width=160, offline=False, static=True, animated_extension='gif')
+        generate_img((north, east), radius, name, width=160, offline=False, static=True, animated_extension='gif')
         names.append(name)
         paths.append(f"{PLOT_PATH}/{name}.gif")
 
