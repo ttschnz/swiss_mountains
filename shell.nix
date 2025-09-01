@@ -23,6 +23,7 @@ pkgs.mkShell {
     pkgs.jupyter-all
     pkgs.imagemagick
     pkgs.git-lfs
+    pkgs.maturin
   ];
 
   shellHook = ''
