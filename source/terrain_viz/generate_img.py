@@ -14,7 +14,7 @@ from matplotlib.tri import Triangulation
 import matplotlib.animation as animation
 
 from utils import url_to_ref
-from source import swissalti3d, swissimage
+from swiss_mountains import swissalti3d, swissimage
 
 PLOT_PATH = "./plots"
 
@@ -39,22 +39,23 @@ def generate_img(peak_coordinates: Tuple[int,int], radius:int, name: str, width:
     total_width = bounding_box[3] - bounding_box[2] # east-west
 
     step = total_width // width
-
+    print(bounding_box)
     if not offline:
         # cache altitude points
         swissalti3d.cache.initialize_cache()
-        url_list = swissalti3d.fetch.get_url_list((bounding_box[0],bounding_box[1]),(bounding_box[2],bounding_box[3]))
+        url_list = swissalti3d.fetch.get_url_list((bounding_box[2],bounding_box[3]),(bounding_box[0],bounding_box[1]))
+        print(f"prefetching {len(url_list)} height files")
         for url in url_list:
             swissalti3d.fetch.prefetch(url)
 
         # cache colors
-        img_url_list = swissimage.fetch.get_url_list((bounding_box[0],bounding_box[1]),(bounding_box[2],bounding_box[3]))
+        img_url_list = swissimage.fetch.get_url_list((bounding_box[2],bounding_box[3]),(bounding_box[0],bounding_box[1]))
         for url in img_url_list:
             swissimage.fetch.prefetch(url)
 
     print("fetching altitude points from cache")
     # get points inside range
-    data = swissalti3d.cache.get_many_from_cache_filtered(step=step, minx=bounding_box[2], maxx=bounding_box[3], miny=bounding_box[0],maxy=bounding_box[1])
+    data = swissalti3d.cache.get_from_cache(step, (bounding_box[2],bounding_box[3]), (bounding_box[0],bounding_box[1]))
     if data is None:
         data = []
 
@@ -64,10 +65,10 @@ def generate_img(peak_coordinates: Tuple[int,int], radius:int, name: str, width:
 
     print("fetching colors from cache")
     # get colors inside range
-    imgdata = swissimage.cache.get_many_from_cache_filtered(step=step*100, minx=bounding_box[2], maxx=bounding_box[3], miny=bounding_box[0],maxy=bounding_box[1])
+    imgdata = swissimage.cache.get_from_cache(step, (bounding_box[2], bounding_box[3]), (bounding_box[0],bounding_box[1]))
     if imgdata is None:
         imgdata = []
-
+    print(f"{len(imgdata)} colors found")
     print("processing colors")
     imgdata_map = {}
     for (x,y,r,g,b) in imgdata:
@@ -114,8 +115,9 @@ def generate_img(peak_coordinates: Tuple[int,int], radius:int, name: str, width:
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection="3d")
 
-    mesh = Poly3DCollection(polys, facecolors=face_colors, linewidths=0, edgecolors="none", alpha=1.0)
+    mesh = Poly3DCollection(polys, facecolors=face_colors, linewidths=0.02, edgecolors="none", alpha=1.0)
     ax.add_collection3d(mesh)
+    mesh.set_edgecolor("face")
 
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
