@@ -24,6 +24,10 @@ pkgs.mkShell {
     pkgs.imagemagick
     pkgs.git-lfs
     pkgs.maturin
+    pkgs.rustc
+    pkgs.cargo
+    pkgs.rustfmt
+    pkgs.pkg-config
   ];
 
   shellHook = ''

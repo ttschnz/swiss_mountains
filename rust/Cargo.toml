@@ -9,3 +9,12 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.26", features = ["extension-module"] }
+rayon = "1.11.0"
+reqwest = { version = "0.12.23", features = [
+    "blocking",
+    "rustls-tls",
+], default-features = false }
+rusqlite = "0.37.0"
+tiff = "0.10.3"
+yuv = "0.8.6"
+zip = "4.6.0"
