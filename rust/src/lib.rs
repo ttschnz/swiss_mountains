@@ -4,6 +4,7 @@ use pyo3::wrap_pymodule;
 
 mod swissalti3d;
 mod swissimage;
+pub mod terrain_viz;
 mod utils;
 
 /// An example module implemented in Rust using PyO3.

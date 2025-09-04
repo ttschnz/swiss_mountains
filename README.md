@@ -18,7 +18,7 @@ A python project that accesses [swissALTI3D](https://opendata.swiss/de/dataset/s
 
 ## Building Instructions
 ### Requirements
-on Nixos, just type
+on Nixos, make sure to set `hardware.graphics.enable = true;` in your `/etc/nixos/configuration.nix`. Then you can just type
 ```bash
 nix-shell .
 ```
@@ -35,7 +35,7 @@ imageio
 genanki
 maturin
 ```
-and **rust** installed.
+and **rust** installed. Other dependencies might be required (not tested).
 ### Building
 First we need to build the rust library. To do this, run
 ```
