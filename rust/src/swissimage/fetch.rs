@@ -13,8 +13,7 @@ use tiff::decoder::{Decoder, DecodingResult};
 // https://ogd.swisstopo.admin.ch/services/swiseld/services/assets/ch.swisstopo.swissimage-dop10/search?format=image%2Ftiff%3B%20application%3Dgeotiff%3B%20profile%3Dcloud-optimized&resolution=2.0&srid=2056&state=current&csv=true
 const URL_LIST: &str = include_str!("ch.swisstopo.swissimage.csv");
 
-fn get_url_list(x_range: (i32, i32), y_range: (i32, i32)) -> Result<Vec<String>, String> {
-    let searching_box = BoundingBox::from_ranges(x_range, y_range);
+pub fn get_url_list(searching_box: &BoundingBox) -> Result<Vec<String>, String> {
     let mut url_list = vec![];
     for url in URL_LIST.lines() {
         let box_covered = BoundingBox::get_box_covered(url)?;
@@ -43,7 +42,7 @@ fn ycbcr_to_rgb(y: u8, cb: u8, cr: u8) -> (u8, u8, u8) {
     )
 }
 
-fn prefetch(url: String) -> Result<(), Box<dyn Error>> {
+pub fn prefetch(url: String) -> Result<(), Box<dyn Error>> {
     let reference = url_to_ref(&url).ok_or(rusqlite::Error::InvalidQuery)?;
 
     // check if the url is already cached
@@ -102,7 +101,8 @@ fn prefetch(url: String) -> Result<(), Box<dyn Error>> {
 
 #[pyfunction(name = "get_url_list")]
 fn get_url_list_python_wrapper(x_range: (i32, i32), y_range: (i32, i32)) -> PyResult<Vec<String>> {
-    get_url_list(x_range, y_range).map_err(PyValueError::new_err)
+    let searching_box = BoundingBox::from_ranges(x_range, y_range);
+    get_url_list(&searching_box).map_err(PyValueError::new_err)
 }
 
 #[pyfunction(name = "prefetch")]

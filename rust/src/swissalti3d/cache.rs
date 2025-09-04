@@ -1,3 +1,4 @@
+use crate::utils::bounding_box::BoundingBox;
 use pyo3::{exceptions::PyValueError, prelude::*};
 use rusqlite::{params, Connection, Result};
 use std::fs;
@@ -35,11 +36,7 @@ pub fn initialize_cache() -> Result<Connection> {
     Ok(conn)
 }
 
-pub fn get_from_cache(
-    step: usize,
-    x_range: (i32, i32),
-    y_range: (i32, i32),
-) -> Result<Vec<(i32, i32, f32)>> {
+pub fn get_from_cache(step: usize, bounding_box: &BoundingBox) -> Result<Vec<(i32, i32, f32)>> {
     let conn = initialize_cache()?;
     let mut stmt = conn.prepare(
         "SELECT x,y,z FROM swissalti3d_data
@@ -52,7 +49,13 @@ pub fn get_from_cache(
                ORDER BY x,y ASC
                ",
     )?;
-    let mut rows = stmt.query((step, x_range.1, x_range.0, y_range.1, y_range.0))?;
+    let mut rows = stmt.query((
+        step,
+        bounding_box.x_range.1,
+        bounding_box.x_range.0,
+        bounding_box.y_range.1,
+        bounding_box.y_range.0,
+    ))?;
 
     let mut parsed_rows: Vec<(i32, i32, f32)> = vec![];
     while let Some(row) = rows.next()? {
@@ -104,8 +107,8 @@ pub fn get_from_cache_python_wrapper(
     x_range: (i32, i32),
     y_range: (i32, i32),
 ) -> PyResult<Vec<(i32, i32, f32)>> {
-    get_from_cache(step, x_range, y_range)
-        .map_err(|db_err| PyValueError::new_err(db_err.to_string()))
+    let bounding_box = BoundingBox::from_ranges(x_range, y_range);
+    get_from_cache(step, &bounding_box).map_err(|db_err| PyValueError::new_err(db_err.to_string()))
 }
 
 #[pymodule(name = "swissalti3d_cache")]
