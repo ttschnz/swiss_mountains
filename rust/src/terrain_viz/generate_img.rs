@@ -67,10 +67,10 @@ pub fn create_mesh(altitude_data: AltitudeData, image_data: ImageData) -> Result
     let mut tree: KdTree<f32, u64, 2, 512, u32> = KdTree::with_capacity(image_data.len());
 
     debug!("filling kdtree");
-    let mut colors = Vec::new();
+    let mut colors: Vec<Srgba> = Vec::new();
     for (i, (x, z, r, g, b)) in image_data.iter().enumerate() {
         tree.add(&[*x as f32, *z as f32], i as u64);
-        colors.push(vec3(*r as i32, *g as i32, *b as i32));
+        colors.push(Srgba::new_opaque(*r, *g, *b));
     }
 
     // convert altitude data to vertex positions
@@ -98,46 +98,24 @@ pub fn create_mesh(altitude_data: AltitudeData, image_data: ImageData) -> Result
         .map(|tri| [tri[0] as u32, tri[1] as u32, tri[2] as u32])
         .collect();
 
-    // Per-face colors: average of 3 vertex (corner) colors
-    debug!("coloring triangles");
-    let mut face_colors = Vec::new();
-    for triangle in &indices {
-        // find closest points to corners (grids don't align)
-        let mut tri_color: Vector3<i32> = vec3(0, 0, 0);
-        let mut color_count: i32 = 0;
-        for &vertex_id in triangle {
-            let (vertex_x, vertex_z, _vertex_y) = altitude_data[vertex_id as usize];
-            let nearest_color_index =
-                tree.nearest_one::<SquaredEuclidean>(&[vertex_x as f32, vertex_z as f32]);
-            tri_color += colors[nearest_color_index.item as usize];
-            color_count += 1;
-        }
-
-        face_colors.push(tri_color / color_count);
+    // find closest points to each corner (vertex)
+    // as the grids don't necessarily align, we find the closest image point in the xz-plane
+    debug!("coloring mesh");
+    let mut vertex_colors = Vec::new();
+    for (x, z, _y) in altitude_data.iter() {
+        let nearest_color_index = tree.nearest_one::<SquaredEuclidean>(&[*x as f32, *z as f32]);
+        let color: Srgba = colors[nearest_color_index.item as usize];
+        vertex_colors.push(color);
     }
 
     // build CPU mesh
     debug!("building mesh");
     let mut cpu_mesh = CpuMesh {
-        positions: Positions::F32(vertices),
+        positions: Positions::F32(vertices.clone()),
         indices: Indices::U32(indices.clone().into_iter().flatten().collect()),
+        colors: Some(vertex_colors),
         ..Default::default()
     };
-
-    // assign colors to each face (expand with 3 duplicates)
-    debug!("coloring mesh");
-    let mut expanded_colors = Vec::new();
-    for (i, _tri) in indices.iter().enumerate() {
-        let color = face_colors[i];
-        for _ in 0..3 {
-            expanded_colors.push(Srgba::new_opaque(
-                color.x as u8,
-                color.y as u8,
-                color.z as u8,
-            ));
-        }
-    }
-    cpu_mesh.colors = Some(expanded_colors);
 
     debug!("computing normals");
     cpu_mesh.compute_normals();
@@ -147,8 +125,8 @@ pub fn create_mesh(altitude_data: AltitudeData, image_data: ImageData) -> Result
 
 pub fn render_mesh(
     cpu_mesh: &CpuMesh,    // mesh to be rendered
-    elevation_angle: f64,  // vertical angle from xy-plane, in degrees
-    azimutal_angle: f64,   // horizontal angle from x-axis, in degrees
+    elevation_angle: f64,  // vertical angles from xy-plane, in degrees
+    azimutal_angle: f64,   // horizontal angles from x-axis, in degrees
     target_filename: &str, // filename of the target image (.png preferrably)
     context: &HeadlessContext,
 ) -> Result<()> {
