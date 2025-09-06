@@ -3423,6 +3423,7 @@ dependencies = [
  "anyhow",
  "delaunator",
  "env_logger",
+ "gif",
  "image",
  "kiddo",
  "log",
