@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 anyhow = "1.0.99"
 delaunator = "1.0.2"
 env_logger = "0.11.8"
+gif = "0.13.3"
 image = "0.25.8"
 kiddo = "5.2.2"
 log = "0.4.28"
