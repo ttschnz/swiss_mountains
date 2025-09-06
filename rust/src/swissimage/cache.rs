@@ -17,22 +17,25 @@ pub fn initialize_cache() -> Result<Connection> {
     conn.execute_batch(
         "
         BEGIN;
+        -- References
         CREATE TABLE IF NOT EXISTS swissimage_references (
-            id TEXT NOT NULL,
-            modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
+            ref_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-        CREATE TABLE IF NOT EXISTS swissimage_data (
-            x INTEGER NOT NULL,
-            y INTEGER NOT NULL,
-            r INTEGER NOT NULL,
-            g INTEGER NOT NULL,
-            b INTEGER NOT NULL,
-            reference_id TEXT,
-            modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (x, y),
-            FOREIGN KEY (reference_id) REFERENCES swissimage_references(id)
+
+        -- R*Tree table for fast queries
+        CREATE VIRTUAL TABLE IF NOT EXISTS swissimage_data
+        USING rtree(
+            rowid,
+            x_min, x_max,
+            y_min, y_max,
+            +r INTEGER NOT NULL,
+            +g INTEGER NOT NULL,
+            +b INTEGER NOT NULL,
+            +reference_id INTEGER
         );
+
         COMMIT;
         ",
     )?;
@@ -46,52 +49,51 @@ pub fn get_from_cache(
     let conn = initialize_cache()?;
     let mut stmt = conn.prepare(
         "
-        SELECT x,y,r,g,b FROM swissimage_data
+        SELECT x_min, y_min, r, g, b
+        FROM swissimage_data
         WHERE
-            (x % ?1 = 0) AND (y % ?1 = 0)
-            AND x < ?2
-            AND x > ?3
-            AND y < ?4
-            AND y > ?5
-
-        ORDER BY x,y ASC
+            x_min BETWEEN ?2 AND ?3 AND -- bounding box x
+            y_min BETWEEN ?4 AND ?5 AND -- bounding box y
+            -- sampling
+            (CAST(x_min AS INTEGER) % ?1 = 0) AND
+            (CAST(y_min AS INTEGER) % ?1 = 0)
+        ORDER BY x_min, y_min;
         ",
     )?;
     let mut rows = stmt.query((
         step,
-        bounding_box.x_range.1,
         bounding_box.x_range.0,
-        bounding_box.y_range.1,
+        bounding_box.x_range.1,
         bounding_box.y_range.0,
+        bounding_box.y_range.1,
     ))?;
 
     let mut parsed_rows: Vec<(i32, i32, u8, u8, u8)> = vec![];
     while let Some(row) = rows.next()? {
-        parsed_rows.push((
-            row.get(0)?, // x
-            row.get(1)?, // y
-            row.get(2)?, // r
-            row.get(3)?, // g
-            row.get(4)?, // b
-        ));
+        let x: f64 = row.get("x_min")?;
+        let y: f64 = row.get("y_min")?;
+        let r: u8 = row.get("r")?;
+        let g: u8 = row.get("g")?;
+        let b: u8 = row.get("b")?;
+        parsed_rows.push((x as i32, y as i32, r, g, b));
     }
-
     Ok(parsed_rows)
 }
 
 pub fn write_to_cache(data: &[(u32, u32, u8, u8, u8)], reference: &str) -> Result<()> {
     let mut conn = initialize_cache()?;
     conn.execute(
-        "INSERT OR REPLACE INTO swissimage_references (id) VALUES (?1)",
+        "INSERT OR REPLACE INTO swissimage_references (name) VALUES (?1)",
         [reference],
     )?;
+    let ref_id = conn.last_insert_rowid();
     let tx = conn.transaction()?;
     {
         let mut stmt = tx.prepare(
-            "INSERT OR REPLACE INTO swissimage_data (x, y, r, g, b, reference_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT OR REPLACE INTO swissimage_data (x_min, x_max, y_min, y_max, r, g, b, reference_id) VALUES (?1, ?1, ?2, ?2, ?3, ?4, ?5, ?6)",
         )?;
         for (x, y, r, g, b) in data {
-            stmt.execute(params![x, y, r, g, b, reference])?;
+            stmt.execute(params![x, y, r, g, b, ref_id])?;
         }
     }
     tx.commit()?;
@@ -101,7 +103,7 @@ pub fn write_to_cache(data: &[(u32, u32, u8, u8, u8)], reference: &str) -> Resul
 pub fn check_cache(reference: &str) -> Result<bool> {
     let conn = initialize_cache()?;
     let count_found: isize = conn.query_row(
-        "SELECT COUNT(*) FROM swissimage_references WHERE id IS ?1",
+        "SELECT COUNT(*) FROM swissimage_references WHERE name IS ?1",
         [reference],
         |row| row.get(0),
     )?;
