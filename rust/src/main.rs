@@ -23,11 +23,11 @@ fn main() {
     let mesh = create_mesh(altitude_data, image_data).unwrap();
 
     info!("rendering mesh");
-    for phi in 0..360 {
+    for phi in 0..10 {
         render_mesh(
             &mesh,
             10.0,
-            phi as f64,
+            phi as f64 / 10f64,
             &format!("frame_{}.png", phi),
             &context,
         )
