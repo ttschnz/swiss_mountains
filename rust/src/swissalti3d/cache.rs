@@ -16,20 +16,23 @@ pub fn initialize_cache() -> Result<Connection> {
     conn.execute_batch(
         "
         BEGIN;
+        -- References
         CREATE TABLE IF NOT EXISTS swissalti3d_references (
-            id TEXT NOT NULL,
-            modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
+            ref_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-        CREATE TABLE IF NOT EXISTS swissalti3d_data (
-            x INTEGER NOT NULL,
-            y INTEGER NOT NULL,
-            z FLOAT NOT NULL,
-            reference_id TEXT,
-            modify_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (x, y),
-            FOREIGN KEY (reference_id) REFERENCES swissalti3d_references(id)
+
+        -- R*Tree table for fast queries
+        CREATE VIRTUAL TABLE IF NOT EXISTS swissalti3d_data
+        USING rtree(
+            rowid,
+            x_min, x_max,
+            y_min, y_max,
+            +z REAL,
+            +reference_id INTEGER
         );
+
         COMMIT;
         ",
     )?;
@@ -39,27 +42,32 @@ pub fn initialize_cache() -> Result<Connection> {
 pub fn get_from_cache(step: usize, bounding_box: &BoundingBox) -> Result<Vec<(i32, i32, f32)>> {
     let conn = initialize_cache()?;
     let mut stmt = conn.prepare(
-        "SELECT x,y,z FROM swissalti3d_data
-               WHERE
-                   (x % ?1 = 1) AND (y % ?1 = 1)
-                   AND x < ?2
-                   AND x > ?3
-                   AND y < ?4
-                   AND y > ?5
-               ORDER BY x,y ASC
-               ",
+        "
+        SELECT x_min, y_min, z
+        FROM swissalti3d_data
+        WHERE
+            x_min BETWEEN ?2 AND ?3 AND -- bounding box x
+            y_min BETWEEN ?4 AND ?5 AND -- bounding box y
+            -- sampling
+            (CAST(x_min AS INTEGER) % ?1 = 1) AND
+            (CAST(y_min AS INTEGER) % ?1 = 1)
+        ORDER BY x_min, y_min;
+        ",
     )?;
     let mut rows = stmt.query((
         step,
-        bounding_box.x_range.1,
         bounding_box.x_range.0,
-        bounding_box.y_range.1,
+        bounding_box.x_range.1,
         bounding_box.y_range.0,
+        bounding_box.y_range.1,
     ))?;
 
     let mut parsed_rows: Vec<(i32, i32, f32)> = vec![];
     while let Some(row) = rows.next()? {
-        parsed_rows.push((row.get(0)?, row.get(1)?, row.get(2)?));
+        let x: f64 = row.get("x_min")?;
+        let y: f64 = row.get("y_min")?;
+        let z: f64 = row.get("z")?;
+        parsed_rows.push((x as i32, y as i32, z as f32));
     }
 
     Ok(parsed_rows)
@@ -68,16 +76,19 @@ pub fn get_from_cache(step: usize, bounding_box: &BoundingBox) -> Result<Vec<(i3
 pub fn write_to_cache(data: Vec<(u32, u32, f64)>, reference: &str) -> Result<()> {
     let mut conn = initialize_cache()?;
     conn.execute(
-        "INSERT OR REPLACE INTO swissalti3d_references (id) VALUES (?1)",
+        "
+        INSERT OR REPLACE INTO swissalti3d_references (name) VALUES (?1)
+        ",
         [reference],
     )?;
+    let ref_id = conn.last_insert_rowid();
     let tx = conn.transaction()?;
     {
         let mut stmt = tx.prepare(
-            "INSERT OR REPLACE INTO swissalti3d_data (x, y, z, reference_id) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT OR REPLACE INTO swissalti3d_data (x_min, x_max, y_min, y_max, z, reference_id) VALUES (?1, ?1, ?2, ?2, ?3, ?4)",
         )?;
         for (x, y, z) in data {
-            stmt.execute(params![x, y, z, reference])?;
+            stmt.execute(params![x, y, z, ref_id])?;
         }
     }
     tx.commit()?;
@@ -87,7 +98,7 @@ pub fn write_to_cache(data: Vec<(u32, u32, f64)>, reference: &str) -> Result<()>
 pub fn check_cache(reference: &str) -> Result<bool> {
     let conn = initialize_cache()?;
     let count_found: isize = conn.query_row(
-        "SELECT COUNT(*) FROM swissalti3d_references WHERE id IS ?1",
+        "SELECT COUNT(*) FROM swissalti3d_references WHERE name IS ?1",
         [reference],
         |row| row.get(0),
     )?;
