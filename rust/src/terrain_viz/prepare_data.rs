@@ -7,10 +7,13 @@ use std::cmp;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 
+const SWISSALTI3D_DATAPOINT_PER_METER: f64 = 0.5;
+const SWISSIMAGE_DATAPOINT_PER_METER: f64 = 0.5;
+
 pub async fn prepare_data(
     peak_coordinates: (u32, u32),
     radius: u32,
-    width: u16,
+    width: usize,
     offline: bool,
 ) -> Result<(AltitudeData, ImageData)> {
     let peak_north = cmp::min(peak_coordinates.0, peak_coordinates.1) as i32;
@@ -21,7 +24,10 @@ pub async fn prepare_data(
         (peak_north - radius as i32, peak_north + radius as i32),
     );
     let total_width = 2 * radius;
-    let step = total_width as usize / width as usize;
+    let swissalti3d_datapoint_percent =
+        width as f64 / (total_width as f64 * SWISSALTI3D_DATAPOINT_PER_METER) * 100f64;
+    let swissimage_datapoint_percent =
+        width as f64 / (total_width as f64 * SWISSIMAGE_DATAPOINT_PER_METER) * 100f64;
 
     if !offline {
         let semaphore = Arc::new(Semaphore::new(10));
@@ -63,8 +69,18 @@ pub async fn prepare_data(
         }
     }
 
-    debug!("collecting altitude points from cache");
-    let complete_altitude_data = swissalti3d::cache::get_from_cache(step, &bounding_box).await?;
+    debug!(
+        "expecting {} altitude points and {} color points",
+        width.pow(2),
+        width.pow(2)
+    );
+
+    debug!(
+        "collecting altitude points from cache with {}%",
+        swissalti3d_datapoint_percent
+    );
+    let complete_altitude_data =
+        swissalti3d::cache::get_from_cache(swissalti3d_datapoint_percent, &bounding_box).await?;
     let altitude_data = complete_altitude_data
         .iter()
         .filter(|(x, y, _z)| {
@@ -74,8 +90,17 @@ pub async fn prepare_data(
         .cloned()
         .collect::<AltitudeData>();
 
-    debug!("collecting colors from cache");
-    let image_data = swissimage::cache::get_from_cache(step, &bounding_box).await?;
+    debug!(
+        "collecting colors from cache with {}%",
+        swissimage_datapoint_percent
+    );
+    let image_data =
+        swissimage::cache::get_from_cache(swissimage_datapoint_percent, &bounding_box).await?;
 
+    debug!(
+        "working with {} altitude points and {} color points",
+        altitude_data.len(),
+        image_data.len()
+    );
     Ok((altitude_data, image_data))
 }

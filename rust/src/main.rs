@@ -11,7 +11,7 @@ use three_d::*;
 #[tokio::main]
 async fn main() -> Result<()> {
     // --- Initialise logging
-    let render_size = (1024u16, 1024u16);
+    let render_size = (3000u16, 3000u16);
     let mut builder = Builder::new();
     builder.format_timestamp(Some(TimestampPrecision::Millis));
     builder.filter_level(log::LevelFilter::Debug);
@@ -22,10 +22,9 @@ async fn main() -> Result<()> {
 
     info!("preparing data");
     let (altitude_data, image_data) = prepare_data(
-        (2616370, 1166137), // Niesen
-        //(2664198, 1171605),
-        4000,
-        render_size.0.max(render_size.1),
+        (2616370, 1166137), // coordinates of niesen
+        4000,               // radius covered
+        500,                // sampling size width
         false,
     )
     .await?;

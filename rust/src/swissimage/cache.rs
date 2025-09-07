@@ -1,5 +1,5 @@
-use std::{fs, time::Duration};
 use std::path::Path;
+use std::{fs, time::Duration};
 use tokio_rusqlite::{params, Connection, Result};
 
 use crate::utils::bounding_box::BoundingBox;
@@ -47,28 +47,28 @@ pub async fn initialize_cache() -> Result<Connection> {
 }
 
 pub async fn get_from_cache(
-    step: usize,
+    datapoint_percent: f64,
     bounding_box: &BoundingBox,
 ) -> Result<Vec<(i32, i32, u8, u8, u8)>> {
-    let conn = initialize_cache().await?;
     let bounding_box = (*bounding_box).clone();
+    let conn = initialize_cache().await?;
     let rows = conn
         .call(move |conn| {
             let mut stmt = conn.prepare(
                 "
-            SELECT x_min, y_min, r, g, b
-            FROM swissimage_data
-            WHERE
-                x_min BETWEEN ?2 AND ?3 AND -- bounding box x
-                y_min BETWEEN ?4 AND ?5 AND -- bounding box y
-                -- sampling
-                (CAST(x_min AS INTEGER) % ?1 = 0) AND
-                (CAST(y_min AS INTEGER) % ?1 = 0)
-            ORDER BY x_min, y_min;
+                SELECT * FROM (
+                    SELECT x_min as x, y_min as y, r, g, b, rowid
+                        FROM swissimage_data
+                        WHERE
+                            x_min BETWEEN ?2 AND ?3 AND -- bounding box x
+                            y_min BETWEEN ?4 AND ?5     -- bounding box y                
+                    )
+                WHERE rowid % ?1 == 0
+                ORDER BY x,y;                
             ",
             )?;
             let mut rows = stmt.query((
-                step,
+                100f64 / datapoint_percent,
                 bounding_box.x_range.0,
                 bounding_box.x_range.1,
                 bounding_box.y_range.0,
@@ -76,8 +76,8 @@ pub async fn get_from_cache(
             ))?;
             let mut parsed_rows: Vec<(i32, i32, u8, u8, u8)> = vec![];
             while let Some(row) = rows.next()? {
-                let x: f64 = row.get("x_min")?;
-                let y: f64 = row.get("y_min")?;
+                let x: f64 = row.get("x")?;
+                let y: f64 = row.get("y")?;
                 let r: u8 = row.get("r")?;
                 let g: u8 = row.get("g")?;
                 let b: u8 = row.get("b")?;
