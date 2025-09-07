@@ -3,9 +3,11 @@ use crate::{swissalti3d, swissimage, utils::bounding_box::BoundingBox};
 
 use anyhow::Result;
 use log::debug;
+use std::sync::Arc;
 use std::{cmp, error::Error};
+use tokio::sync::Semaphore;
 
-pub fn prepare_data(
+pub async fn prepare_data(
     peak_coordinates: (u32, u32),
     radius: u32,
     width: u16,
@@ -22,18 +24,43 @@ pub fn prepare_data(
     let step = total_width as usize / width as usize;
 
     if !offline {
+        let semaphore = Arc::new(Semaphore::new(10));
+        let mut handles: std::vec::Vec<tokio::task::JoinHandle<Result<_, Box<dyn Error + Send>>>> =
+            vec![];
+
         // cache altitude points
         let swissalti3d_url_list = swissalti3d::fetch::get_url_list(&bounding_box)?;
         debug!("prefetching {} height files", swissalti3d_url_list.len());
         for url in swissalti3d_url_list {
-            swissalti3d::fetch::prefetch(url)?;
+            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let url = url.clone();
+            handles.push(tokio::task::spawn_blocking(|| {
+                let _permit = permit;
+                swissalti3d::fetch::prefetch(url)?;
+                Ok(())
+            }));
         }
 
         // cache colors
         let swissimage_url_list = swissimage::fetch::get_url_list(&bounding_box)?;
         debug!("prefetching {} color files", swissimage_url_list.len());
         for url in swissimage_url_list {
-            swissimage::fetch::prefetch(url)?;
+            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let url = url.clone();
+            handles.push(tokio::task::spawn_blocking(|| {
+                let _permit = permit;
+                swissimage::fetch::prefetch(url)?;
+                Ok(())
+            }));
+        }
+
+        // wait for each download to complete, then handle errors
+        for handle in handles {
+            match handle.await {
+                Ok(Ok(_)) => {}
+                Ok(Err(e)) => return Err(e),
+                Err(join_err) => return Err(join_err.into()),
+            }
         }
     }
 

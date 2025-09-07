@@ -27,5 +27,6 @@ serial_test = "3.2.0"
 three-d = { version = "0.18.2", features = ["headless"] }
 three-d-asset = { version = "0.9.2", features = ["gif", "png"] }
 tiff = "0.10.3"
+tokio = { version = "1.47.1", features = ["full", "macros", "sync"] }
 yuv = "0.8.6"
 zip = "4.6.0"

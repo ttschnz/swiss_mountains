@@ -1,3 +1,5 @@
+use anyhow::{Error, Result};
+
 pub struct BoundingBox {
     pub x_range: (i32, i32),
     pub y_range: (i32, i32),
@@ -21,7 +23,7 @@ impl BoundingBox {
         )
     }
 
-    pub fn get_box_covered(url: &str) -> Result<Self, String> {
+    pub fn get_box_covered(url: &str) -> Result<Self> {
         // remove trailing '/'
         let trimmed = url.trim_end_matches('/');
 
@@ -29,28 +31,28 @@ impl BoundingBox {
         let last_part = trimmed
             .rsplit('/')
             .next()
-            .ok_or_else(|| "Failed to get last path component".to_string())?;
+            .ok_or(Error::msg("Failed to get last path component"))?;
 
         // split by "_"
         let parts: Vec<&str> = last_part.split('_').collect();
         if parts.len() < 3 {
-            return Err("Failed to extract range part from URL".into());
+            return Err(Error::msg("Failed to extract range part from URL"));
         }
 
         let range_part = parts[2];
         let coords: Vec<&str> = range_part.split('-').collect();
         if coords.len() != 2 {
-            return Err("Failed to extract easting/northing values".into());
+            return Err(Error::msg("Failed to extract easting/northing values"));
         }
 
         let easting: i32 = coords[0]
             .parse::<i32>()
-            .map_err(|_| "Invalid easting value".to_string())?
+            .map_err(|_| Error::msg("Invalid easting value"))?
             * 1000;
 
         let northing: i32 = coords[1]
             .parse::<i32>()
-            .map_err(|_| "Invalid northing value".to_string())?
+            .map_err(|_| Error::msg("Invalid northing value"))?
             * 1000;
 
         Ok(BoundingBox {

@@ -8,23 +8,27 @@ use log::info;
 use std::cmp::max;
 use three_d::*;
 
-fn main() {
+#[tokio::main]
+async fn main() {
+    // --- Initialise logging
     let render_size = (1024u16, 1024u16);
     let mut builder = Builder::new();
     builder.format_timestamp(Some(TimestampPrecision::Millis));
     builder.filter_level(log::LevelFilter::Debug);
     builder.init();
 
-    // --- headless GL context ---
+    // --- headless GL context: singleton, cannot be created multiple times per program ---
     let context = HeadlessContext::new().unwrap();
 
     info!("preparing data");
     let (altitude_data, image_data) = prepare_data(
-        (2616370, 1166137),
+        (2616370, 1166137), // Niesen
+        //(2664198, 1171605),
         4000,
         render_size.0.max(render_size.1),
         false,
     )
+    .await
     .unwrap();
 
     info!("creating mesh");

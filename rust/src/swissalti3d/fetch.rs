@@ -2,10 +2,9 @@ use crate::{
     swissalti3d::cache,
     utils::{bounding_box::BoundingBox, url_to_ref},
 };
+use anyhow::{Error, Result};
 use pyo3::{exceptions::PyValueError, prelude::*};
 use reqwest::blocking;
-use rusqlite::Result;
-use std::error::Error;
 use std::io::{BufRead, BufReader, Cursor};
 use zip::ZipArchive;
 
@@ -13,7 +12,7 @@ use zip::ZipArchive;
 // https://ogd.swisstopo.admin.ch/services/swiseld/services/assets/ch.swisstopo.swissalti3d/search?format=application%2Fx.ascii-xyz%2Bzip&resolution=2.0&srid=2056&state=current&csv=true
 const URL_LIST: &str = include_str!("ch.swisstopo.swissalti3d.csv");
 
-pub fn get_url_list(searching_box: &BoundingBox) -> Result<Vec<String>, String> {
+pub fn get_url_list(searching_box: &BoundingBox) -> Result<Vec<String>> {
     let mut url_list = vec![];
     for url in URL_LIST.lines() {
         let box_covered = BoundingBox::get_box_covered(url)?;
@@ -24,7 +23,7 @@ pub fn get_url_list(searching_box: &BoundingBox) -> Result<Vec<String>, String> 
     Ok(url_list)
 }
 
-pub fn prefetch(url: String) -> Result<(), Box<dyn Error>> {
+pub fn prefetch(url: String) -> Result<()> {
     let reference = url_to_ref(&url).ok_or(rusqlite::Error::InvalidQuery)?;
 
     // check if the url is already cached
@@ -49,9 +48,18 @@ pub fn prefetch(url: String) -> Result<(), Box<dyn Error>> {
 
         let mut data_line = line.split(' ');
 
-        let x = data_line.next().ok_or("not enough data")?.parse::<u32>()?;
-        let y = data_line.next().ok_or("not enough data")?.parse::<u32>()?;
-        let z = data_line.next().ok_or("not enough data")?.parse::<f64>()?;
+        let x = data_line
+            .next()
+            .ok_or(Error::msg("not enough data"))?
+            .parse::<u32>()?;
+        let y = data_line
+            .next()
+            .ok_or(Error::msg("not enough data"))?
+            .parse::<u32>()?;
+        let z = data_line
+            .next()
+            .ok_or(Error::msg("not enough data"))?
+            .parse::<f64>()?;
 
         data.push((x, y, z));
     }
@@ -63,7 +71,7 @@ pub fn prefetch(url: String) -> Result<(), Box<dyn Error>> {
 #[pyfunction(name = "get_url_list")]
 fn get_url_list_python_wrapper(x_range: (i32, i32), y_range: (i32, i32)) -> PyResult<Vec<String>> {
     let searching_box = BoundingBox::from_ranges(x_range, y_range);
-    get_url_list(&searching_box).map_err(PyValueError::new_err)
+    get_url_list(&searching_box).map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
 #[pyfunction(name = "prefetch")]
