@@ -3,8 +3,7 @@ use crate::{
     utils::{bounding_box::BoundingBox, url_to_ref},
 };
 use anyhow::{Error, Result};
-use pyo3::{exceptions::PyValueError, prelude::*};
-use reqwest::blocking;
+use reqwest::get;
 use std::io::BufReader;
 use std::io::Cursor;
 use tiff::decoder::{Decoder, DecodingResult};
@@ -42,18 +41,18 @@ fn ycbcr_to_rgb(y: u8, cb: u8, cr: u8) -> (u8, u8, u8) {
     )
 }
 
-pub fn prefetch(url: String) -> Result<()> {
-    let reference = url_to_ref(&url).ok_or(rusqlite::Error::InvalidQuery)?;
+pub async fn prefetch(url: String) -> Result<()> {
+    let reference = url_to_ref(&url).ok_or(Error::msg("invalid url"))?;
 
     // check if the url is already cached
-    if cache::check_cache(&reference)? {
+    if cache::check_cache(&reference).await? {
         return Ok(());
     }
     let bounding_box = BoundingBox::get_box_covered(&url)?;
 
     // download reference
-    let response = blocking::get(&url)?;
-    let bytes = response.bytes()?;
+    let response = get(&url).await?;
+    let bytes = response.bytes().await?;
     // data in buffer is an image (.tif)
     let buffer = bytes.to_vec();
     let cursor = Cursor::new(buffer);
@@ -94,26 +93,7 @@ pub fn prefetch(url: String) -> Result<()> {
         }
     }
 
-    cache::write_to_cache(&rgb_pixels, &reference)?;
+    cache::write_to_cache(&rgb_pixels, &reference).await?;
 
-    Ok(())
-}
-
-#[pyfunction(name = "get_url_list")]
-fn get_url_list_python_wrapper(x_range: (i32, i32), y_range: (i32, i32)) -> PyResult<Vec<String>> {
-    let searching_box = BoundingBox::from_ranges(x_range, y_range);
-    get_url_list(&searching_box).map_err(|err| PyValueError::new_err(err.to_string()))
-}
-
-#[pyfunction(name = "prefetch")]
-fn prefetch_python_wrapper(url: String) -> PyResult<()> {
-    // fn prefetch(url: String) -> Result<(), Box<dyn Error>> {
-    prefetch(url).map_err(|err| PyValueError::new_err(err.to_string()))
-}
-
-#[pymodule(name = "swissimage_fetch")]
-pub fn fetch_module(_py: Python, parent: &Bound<'_, PyModule>) -> PyResult<()> {
-    parent.add_function(wrap_pyfunction!(get_url_list_python_wrapper, parent)?)?;
-    parent.add_function(wrap_pyfunction!(prefetch_python_wrapper, parent)?)?;
     Ok(())
 }

@@ -3,8 +3,7 @@ use crate::{
     utils::{bounding_box::BoundingBox, url_to_ref},
 };
 use anyhow::{Error, Result};
-use pyo3::{exceptions::PyValueError, prelude::*};
-use reqwest::blocking;
+use reqwest::get;
 use std::io::{BufRead, BufReader, Cursor};
 use zip::ZipArchive;
 
@@ -23,18 +22,18 @@ pub fn get_url_list(searching_box: &BoundingBox) -> Result<Vec<String>> {
     Ok(url_list)
 }
 
-pub fn prefetch(url: String) -> Result<()> {
-    let reference = url_to_ref(&url).ok_or(rusqlite::Error::InvalidQuery)?;
+pub async fn prefetch(url: String) -> Result<()> {
+    let reference = url_to_ref(&url).ok_or(Error::msg("invalid url"))?;
 
     // check if the url is already cached
-    if cache::check_cache(&reference)? {
+    if cache::check_cache(&reference).await? {
         return Ok(());
     }
 
     // download reference
     let mut data = vec![];
-    let response = blocking::get(&url)?;
-    let bytes = response.bytes()?;
+    let response = get(&url).await?;
+    let bytes = response.bytes().await?;
     let buffer = bytes.to_vec();
     let cursor = Cursor::new(buffer);
 
@@ -63,27 +62,8 @@ pub fn prefetch(url: String) -> Result<()> {
 
         data.push((x, y, z));
     }
-    cache::write_to_cache(data, &reference)?;
+    cache::write_to_cache(data, &reference).await?;
 
-    Ok(())
-}
-
-#[pyfunction(name = "get_url_list")]
-fn get_url_list_python_wrapper(x_range: (i32, i32), y_range: (i32, i32)) -> PyResult<Vec<String>> {
-    let searching_box = BoundingBox::from_ranges(x_range, y_range);
-    get_url_list(&searching_box).map_err(|err| PyValueError::new_err(err.to_string()))
-}
-
-#[pyfunction(name = "prefetch")]
-fn prefetch_python_wrapper(url: String) -> PyResult<()> {
-    // fn prefetch(url: String) -> Result<(), Box<dyn Error>> {
-    prefetch(url).map_err(|err| PyValueError::new_err(err.to_string()))
-}
-
-#[pymodule(name = "swissalti3d_fetch")]
-pub fn fetch_module(_py: Python, parent: &Bound<'_, PyModule>) -> PyResult<()> {
-    parent.add_function(wrap_pyfunction!(get_url_list_python_wrapper, parent)?)?;
-    parent.add_function(wrap_pyfunction!(prefetch_python_wrapper, parent)?)?;
     Ok(())
 }
 
@@ -92,8 +72,8 @@ pub fn fetch_module(_py: Python, parent: &Bound<'_, PyModule>) -> PyResult<()> {
 #[cfg(test)]
 mod test {
     use super::*;
-    #[test]
-    fn test_prefetch() {
-        prefetch("https://data.geo.admin.ch/ch.swisstopo.swissalti3d/swissalti3d_2019_2617-1166/swissalti3d_2019_2617-1166_2_2056_5728.xyz.zip".to_string()).unwrap();
+    #[tokio::test]
+    async fn test_prefetch() {
+        prefetch("https://data.geo.admin.ch/ch.swisstopo.swissalti3d/swissalti3d_2019_2617-1166/swissalti3d_2019_2617-1166_2_2056_5728.xyz.zip".to_string()).await.unwrap();
     }
 }

@@ -1,6 +1,5 @@
 use anyhow::Result;
 use gif::{Encoder, Frame, Repeat};
-use image::GenericImageView;
 use std::fs::File;
 
 pub fn compose_gif(paths: &[String], output_path: &str, size: (u16, u16)) -> Result<()> {
