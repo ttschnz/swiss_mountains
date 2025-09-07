@@ -1,5 +1,5 @@
 use crate::utils::bounding_box::BoundingBox;
-use std::fs;
+use std::{fs, time::Duration};
 use std::path::Path;
 use tokio_rusqlite::{params, Connection, Result};
 
@@ -88,22 +88,22 @@ pub async fn write_to_cache(data: Vec<(u32, u32, f64)>, reference: &str) -> Resu
 
     let conn = initialize_cache().await?;
     conn.call(|conn|{
-        conn.execute(
-            "
-            INSERT OR REPLACE INTO swissalti3d_references (name) VALUES (?1)
-            ",
-            [reference],
-        )?;
-        let ref_id = conn.last_insert_rowid();
+        conn.busy_timeout(Duration::from_millis(30000))?;
         let tx = conn.transaction()?;
         {
+            tx.execute(
+                "
+                INSERT OR REPLACE INTO swissalti3d_references (name) VALUES (?1)
+                ",
+                [reference],
+            )?;
+            let ref_id = tx.last_insert_rowid();
             let mut stmt = tx.prepare(
                 "INSERT OR REPLACE INTO swissalti3d_data (x_min, x_max, y_min, y_max, z, reference_id) VALUES (?1, ?1, ?2, ?2, ?3, ?4)",
             )?;
             for (x, y, z) in data {
                 stmt.execute(params![x, y, z, ref_id])?;
-            }
-        }
+            }}
         tx.commit()?;
         Ok(())
     }).await

@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, time::Duration};
 use std::path::Path;
 use tokio_rusqlite::{params, Connection, Result};
 
@@ -14,6 +14,7 @@ pub async fn initialize_cache() -> Result<Connection> {
     }
     let conn = Connection::open(SWISSIMAGE_CACHE_FILE).await?;
     conn.call(|conn| {
+        conn.busy_timeout(Duration::from_millis(30000))?;
         Ok(conn.execute_batch(
             "
             BEGIN;
@@ -93,13 +94,13 @@ pub async fn write_to_cache(data: &Vec<(u32, u32, u8, u8, u8)>, reference: &str)
     let reference = reference.to_string();
     let conn = initialize_cache().await?;
     conn.call(move |conn|{
-        conn.execute(
-            "INSERT OR REPLACE INTO swissimage_references (name) VALUES (?1)",
-            [reference],
-        )?;
-        let ref_id = conn.last_insert_rowid();
         let tx = conn.transaction()?;
         {
+            tx.execute(
+                "INSERT OR REPLACE INTO swissimage_references (name) VALUES (?1)",
+                [reference],
+            )?;
+            let ref_id = tx.last_insert_rowid();
             let mut stmt = tx.prepare(
                 "INSERT OR REPLACE INTO swissimage_data (x_min, x_max, y_min, y_max, r, g, b, reference_id) VALUES (?1, ?1, ?2, ?2, ?3, ?4, ?5, ?6)",
             )?;

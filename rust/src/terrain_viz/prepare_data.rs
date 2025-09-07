@@ -1,10 +1,10 @@
 use super::{AltitudeData, ImageData};
 use crate::{swissalti3d, swissimage, utils::bounding_box::BoundingBox};
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 use log::debug;
+use std::cmp;
 use std::sync::Arc;
-use std::{cmp, error::Error};
 use tokio::sync::Semaphore;
 
 pub async fn prepare_data(
@@ -12,7 +12,7 @@ pub async fn prepare_data(
     radius: u32,
     width: u16,
     offline: bool,
-) -> Result<(AltitudeData, ImageData), Box<dyn Error>> {
+) -> Result<(AltitudeData, ImageData)> {
     let peak_north = cmp::min(peak_coordinates.0, peak_coordinates.1) as i32;
     let peak_east = cmp::max(peak_coordinates.0, peak_coordinates.1) as i32;
 
@@ -25,8 +25,7 @@ pub async fn prepare_data(
 
     if !offline {
         let semaphore = Arc::new(Semaphore::new(10));
-        let mut handles: std::vec::Vec<tokio::task::JoinHandle<Result<_, Box<dyn Error + Send>>>> =
-            vec![];
+        let mut handles: std::vec::Vec<tokio::task::JoinHandle<Result<_>>> = vec![];
 
         // cache altitude points
         let swissalti3d_url_list = swissalti3d::fetch::get_url_list(&bounding_box)?;
@@ -59,7 +58,7 @@ pub async fn prepare_data(
             match handle.await {
                 Ok(Ok(_)) => {}
                 Ok(Err(e)) => return Err(e),
-                Err(join_err) => return Err(join_err.into()),
+                Err(join_err) => return Err(Error::from(join_err)),
             }
         }
     }

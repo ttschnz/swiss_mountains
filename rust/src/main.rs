@@ -3,12 +3,13 @@ mod swissimage;
 mod terrain_viz;
 mod utils;
 use crate::terrain_viz::{compose_gif, create_mesh, prepare_data, render_mesh};
+use anyhow::Result;
 use env_logger::{fmt::TimestampPrecision, Builder};
 use log::info;
 use three_d::*;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     // --- Initialise logging
     let render_size = (1024u16, 1024u16);
     let mut builder = Builder::new();
@@ -17,7 +18,7 @@ async fn main() {
     builder.init();
 
     // --- headless GL context: singleton, cannot be created multiple times per program ---
-    let context = HeadlessContext::new().unwrap();
+    let context = HeadlessContext::new()?;
 
     info!("preparing data");
     let (altitude_data, image_data) = prepare_data(
@@ -27,22 +28,23 @@ async fn main() {
         render_size.0.max(render_size.1),
         false,
     )
-    .await
-    .unwrap();
+    .await?;
 
     info!("creating mesh");
-    let mesh = create_mesh(altitude_data, image_data).unwrap();
+    let mesh = create_mesh(altitude_data, image_data)?;
 
     info!("rendering mesh");
     let mut pngs = Vec::new();
     for phi in 0..360 {
         let path = format!("frames/frame_{}.png", phi);
-        render_mesh(&mesh, 10.0, phi as f64, &path, render_size, &context).unwrap();
+        render_mesh(&mesh, 10.0, phi as f64, &path, render_size, &context)?;
         pngs.push(path);
     }
 
     info!("composing gif");
-    compose_gif(&pngs, "niesen.gif", render_size).unwrap();
+    compose_gif(&pngs, "niesen.gif", render_size)?;
 
     info!("done");
+
+    Ok(())
 }
