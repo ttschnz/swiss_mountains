@@ -34,9 +34,9 @@ pub async fn prepare_data(
         for url in swissalti3d_url_list {
             let permit = semaphore.clone().acquire_owned().await.unwrap();
             let url = url.clone();
-            handles.push(tokio::task::spawn_blocking(|| {
+            handles.push(tokio::spawn(async {
                 let _permit = permit;
-                swissalti3d::fetch::prefetch(url)?;
+                swissalti3d::fetch::prefetch(url).await?;
                 Ok(())
             }));
         }
@@ -47,9 +47,9 @@ pub async fn prepare_data(
         for url in swissimage_url_list {
             let permit = semaphore.clone().acquire_owned().await.unwrap();
             let url = url.clone();
-            handles.push(tokio::task::spawn_blocking(|| {
+            handles.push(tokio::spawn(async {
                 let _permit = permit;
-                swissimage::fetch::prefetch(url)?;
+                swissimage::fetch::prefetch(url).await?;
                 Ok(())
             }));
         }
@@ -65,7 +65,7 @@ pub async fn prepare_data(
     }
 
     debug!("collecting altitude points from cache");
-    let complete_altitude_data = swissalti3d::cache::get_from_cache(step, &bounding_box)?;
+    let complete_altitude_data = swissalti3d::cache::get_from_cache(step, &bounding_box).await?;
     let altitude_data = complete_altitude_data
         .iter()
         .filter(|(x, y, _z)| {
@@ -76,7 +76,7 @@ pub async fn prepare_data(
         .collect::<AltitudeData>();
 
     debug!("collecting colors from cache");
-    let image_data = swissimage::cache::get_from_cache(step, &bounding_box)?;
+    let image_data = swissimage::cache::get_from_cache(step, &bounding_box).await?;
 
     Ok((altitude_data, image_data))
 }

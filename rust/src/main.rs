@@ -5,7 +5,6 @@ mod utils;
 use crate::terrain_viz::{compose_gif, create_mesh, prepare_data, render_mesh};
 use env_logger::{fmt::TimestampPrecision, Builder};
 use log::info;
-use std::cmp::max;
 use three_d::*;
 
 #[tokio::main]

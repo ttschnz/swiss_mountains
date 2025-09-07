@@ -1,5 +1,6 @@
 use anyhow::{Error, Result};
 
+#[derive(Debug, Clone, Copy)]
 pub struct BoundingBox {
     pub x_range: (i32, i32),
     pub y_range: (i32, i32),
