@@ -1,16 +1,15 @@
-use anyhow::Result;
+use anyhow::{Error, Result};
+use image::{ImageBuffer, Rgba};
 use log::debug;
 use three_d::*;
-use three_d_asset::io::Serialize;
 
 pub fn render_mesh(
-    cpu_mesh: &CpuMesh,    // mesh to be rendered
-    elevation_angle: f64,  // vertical angles from xy-plane, in degrees
-    azimutal_angle: f64,   // horizontal angles from x-axis, in degrees
-    target_filename: &str, // filename of the target image (.png preferrably)
+    cpu_mesh: &CpuMesh,   // mesh to be rendered
+    elevation_angle: f64, // vertical angles from xy-plane, in degrees
+    azimutal_angle: f64,  // horizontal angles from x-axis, in degrees
     render_size: (u16, u16),
     context: &HeadlessContext,
-) -> Result<()> {
+) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
     // --- render size ---
     let (width, height) = render_size;
     let width = width as u32;
@@ -74,21 +73,14 @@ pub fn render_mesh(
     );
 
     debug!("rendering scene");
-    let pixels = RenderTarget::new(texture.as_color_target(None), depth.as_depth_target())
-        .clear(ClearState::color_and_depth(0.04, 0.04, 0.05, 1.0, 1.0))
-        .render(&camera, &model, &[])
-        .read_color();
+    let pixels: Vec<[u8; 4]> =
+        RenderTarget::new(texture.as_color_target(None), depth.as_depth_target())
+            .clear(ClearState::color_and_depth(0.04, 0.04, 0.05, 1.0, 1.0))
+            .render(&camera, &model, &[])
+            .read_color();
 
-    debug!("exporting to file");
-    three_d_asset::io::save(
-        &CpuTexture {
-            data: TextureData::RgbaU8(pixels),
-            width: texture.width(),
-            height: texture.height(),
-            ..Default::default()
-        }
-        .serialize(target_filename)?,
-    )?;
-
-    Ok(())
+    let buf: Vec<u8> = pixels.into_iter().flat_map(|px| px.to_vec()).collect();
+    ImageBuffer::from_raw(texture.width(), texture.height(), buf).ok_or(Error::msg(
+        "could not create image buffer from rendered data",
+    ))
 }

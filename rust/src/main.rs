@@ -11,7 +11,7 @@ use three_d::*;
 #[tokio::main]
 async fn main() -> Result<()> {
     // --- Initialise logging
-    let render_size = (3000u16, 3000u16);
+    let render_size = (300u16, 300u16);
     let mut builder = Builder::new();
     builder.format_timestamp(Some(TimestampPrecision::Millis));
     builder.filter_level(log::LevelFilter::Debug);
@@ -32,16 +32,16 @@ async fn main() -> Result<()> {
     info!("creating mesh");
     let mesh = create_mesh(altitude_data, image_data)?;
 
-    info!("rendering mesh");
-    let mut pngs = Vec::new();
+    let mut raw_data = Vec::new();
     for phi in 0..360 {
-        let path = format!("frames/frame_{}.png", phi);
-        render_mesh(&mesh, 10.0, phi as f64, &path, render_size, &context)?;
-        pngs.push(path);
+        info!("rendering mesh ({phi}/360)");
+        let image = render_mesh(&mesh, 10.0, phi as f64, render_size, &context)?;
+        let dim = (image.width() as u16, image.height() as u16);
+        raw_data.push((image.into_raw(), dim.0, dim.1));
     }
 
     info!("composing gif");
-    compose_gif(&pngs, "niesen.gif", render_size)?;
+    compose_gif(&mut raw_data, "niesen.gif")?;
 
     info!("done");
 
