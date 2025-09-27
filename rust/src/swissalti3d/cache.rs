@@ -63,7 +63,7 @@ pub async fn get_from_cache(
                 ",
             )?;
             let mut rows = stmt.query((
-                datapoint_percent,
+                100f64 / datapoint_percent,
                 bounding_box.x_range.0,
                 bounding_box.x_range.1,
                 bounding_box.y_range.0,
