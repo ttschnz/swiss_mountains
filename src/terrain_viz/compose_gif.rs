@@ -8,7 +8,7 @@ use std::{fs::File, path::Path};
 /// Given a vector of images along with their respective width and height, frames are composed into a gif and saved to a file.
 /// 
 /// # Example
-/// ```rs
+/// ```rust
 /// use image::{ImageBuffer, open};
 /// let img1: ImageBuffer = open("path/to/some1.png").unwrap().into_rgba8();
 /// let img2: ImageBuffer = open("path/to/some2.png").unwrap().into_rgba8();
