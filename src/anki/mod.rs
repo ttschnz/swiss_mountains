@@ -9,7 +9,7 @@ pub fn create_deck(
     target_file: &Path,
 ) -> Result<()> {
     let anki_model = Model::new(
-        0598447264,
+        598447264,
         "SwissMountains Model",
         vec![Field::new("Mountain Name"), Field::new("gif")],
         vec![Template::new("Card 1")

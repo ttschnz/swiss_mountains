@@ -50,7 +50,7 @@ pub async fn get_from_cache(
     datapoint_percent: f64,
     bounding_box: &BoundingBox,
 ) -> Result<Vec<(i32, i32, u8, u8, u8)>> {
-    let bounding_box = (*bounding_box).clone();
+    let bounding_box = *bounding_box;
     let conn = initialize_cache().await?;
     let rows = conn
         .call(move |conn| {
@@ -89,8 +89,8 @@ pub async fn get_from_cache(
     Ok(rows)
 }
 
-pub async fn write_to_cache(data: &Vec<(u32, u32, u8, u8, u8)>, reference: &str) -> Result<()> {
-    let data = data.clone();
+pub async fn write_to_cache(data: &[(u32, u32, u8, u8, u8)], reference: &str) -> Result<()> {
+    let data = data.to_vec();
     let reference = reference.to_string();
     let conn = initialize_cache().await?;
     conn.call(move |conn|{

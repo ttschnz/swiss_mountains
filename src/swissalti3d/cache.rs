@@ -46,7 +46,7 @@ pub async fn get_from_cache(
     bounding_box: &BoundingBox,
 ) -> Result<Vec<(i32, i32, f32)>> {
     let conn = initialize_cache().await?;
-    let bounding_box = (*bounding_box).clone();
+    let bounding_box = *bounding_box;
     let rows = conn
         .call(move |conn| {
             let mut stmt = conn.prepare(

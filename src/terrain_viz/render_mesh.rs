@@ -33,7 +33,7 @@ pub fn render_mesh(
 
     // --- GPU geometry + basic physically based material ---
     debug!("importing mesh");
-    let mesh = Mesh::new(&context, &cpu_mesh);
+    let mesh = Mesh::new(context, cpu_mesh);
     let material = ColorMaterial::default();
     let model = Gm::new(mesh, material);
 
@@ -43,8 +43,8 @@ pub fn render_mesh(
     let aabb = model.aabb();
     let center = aabb.center();
     let diag = (aabb.max() - aabb.min()).magnitude();
-    let fov = 55.0;
-    let distance = diag / (2.0 * ((fov as f32).to_radians() * 0.5).tan());
+    let fov: f32 = 55.0;
+    let distance = diag / (2.0 * (fov.to_radians() * 0.5).tan());
 
     let elevation_rad = elevation_angle.to_radians() as f32;
     let azimutal_rad = azimutal_angle.to_radians() as f32;
@@ -70,7 +70,7 @@ pub fn render_mesh(
     // --- offscreen color + depth textures (render target) ---
     // RGBA8 color
     let mut texture = Texture2D::new_empty::<[u8; 4]>(
-        &context,
+        context,
         width,
         height,
         Interpolation::Linear,
@@ -81,7 +81,7 @@ pub fn render_mesh(
     );
     // 32-bit float depth
     let mut depth = DepthTexture2D::new::<f32>(
-        &context,
+        context,
         width,
         height,
         Wrapping::ClampToEdge,

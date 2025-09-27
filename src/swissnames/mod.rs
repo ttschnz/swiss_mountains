@@ -114,13 +114,13 @@ pub struct NamedPlace {
 
 impl NamedPlace {
     pub fn distance_to(&self, other_easting: i64, other_northing: i64) -> f64 {
-        (((self.easting as i64 - other_easting as i64).wrapping_pow(2)
+        (((self.easting as i64 - other_easting).wrapping_pow(2)
             + (self.northing as i64 - other_northing).wrapping_pow(2)) as f64)
             .sqrt()
     }
 }
 
-const SWISSNAMES: &'static str = include_str!("./swissNAMES3D_PKT.csv");
+const SWISSNAMES: &str = include_str!("./swissNAMES3D_PKT.csv");
 
 pub fn get_peaks() -> Vec<NamedPlace> {
     let mut rdr = ReaderBuilder::new()

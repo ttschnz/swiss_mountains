@@ -11,7 +11,7 @@ use crate::anki::create_deck;
 use crate::swissnames::get_peaks;
 use crate::terrain_viz::{compose_gif, create_mesh, prepare_data, render_mesh};
 
-use anyhow::{Error, Result};
+use anyhow::Result;
 use env_logger::{fmt::TimestampPrecision, Builder};
 use log::info;
 use three_d::*;
