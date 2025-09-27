@@ -74,7 +74,7 @@ enum ObjectType {
     #[serde(rename = "Haupthuegel")]
     Haupthuegel,
     #[serde(rename = "Quelle")]
-    Quele,
+    Quelle,
 }
 
 impl ObjectType {
