@@ -82,17 +82,8 @@ async fn main() -> Result<()> {
     }
     info!("creating anki deck");
 
-    let file_names = file_list
-        .iter()
-        .map(|path| {
-            path.file_name()
-                .and_then(|os_str| os_str.to_str())
-                .ok_or(Error::msg("could not find gif"))
-        })
-        .collect::<Result<Vec<_>>>()?;
-
     let anki_file_name = std::env::current_dir()?.join(anki_file_name);
-    create_deck(&file_names, &peak_names, &anki_file_name)?;
+    create_deck(&file_list, &peak_names, &anki_file_name)?;
 
     info!("done");
     showfile::show_path_in_file_manager(anki_file_name.into_os_string());

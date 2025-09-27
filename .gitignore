@@ -196,7 +196,5 @@ cython_debug/
 
 
 ##------
-# Cache & outputs
+# Cache
 cache
-plots
-anki
