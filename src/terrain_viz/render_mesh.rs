@@ -4,21 +4,21 @@ use log::debug;
 use three_d::*;
 
 /// Renders a mesh with polar viewport angles to a image buffer
-/// 
-/// The headless context is filled with the given mesh. Then the viewport is 
+///
+/// The headless context is filled with the given mesh. Then the viewport is
 /// rendered from the given angles with the camera facing the origin. The render is
 /// saved to a buffer and returned
-/// 
+///
 /// # Example
 /// ```
 /// use three_d::*;
 /// use image::{ImageBuffer};
 /// let mesh = CpuMesh::cube();
 /// let context = HeadlessContext::new().unwrap();
-/// 
+///
 /// let buff: ImageBuffer = render_mesh(mesh, 15.0, 0.0, (1024, 1024), context).unwrap();
 /// ```
-/// 
+///
 pub fn render_mesh(
     cpu_mesh: &CpuMesh,   // mesh to be rendered
     elevation_angle: f64, // vertical angles from xy-plane, in degrees
