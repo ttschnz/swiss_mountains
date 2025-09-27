@@ -1,7 +1,7 @@
 use anyhow::Result;
 use gif::{Encoder, Frame, Repeat};
 use rayon::prelude::*;
-use std::fs::File;
+use std::{fs::File, path::Path};
 
 /// Exports a list of images to a gif. 
 ///
@@ -23,7 +23,7 @@ use std::fs::File;
 /// compose_gif(images, "target.gif").unwrap();
 /// ```
 /// 
-pub fn compose_gif(images: &mut [(Vec<u8>, u16, u16)], output_path: &str) -> Result<()> {
+pub fn compose_gif(images: &mut [(Vec<u8>, u16, u16)], output_path: &Path) -> Result<()> {
     let (frames, dim): (Vec<Frame>, Vec<(u16, u16)>) = images.par_iter_mut().map(|(pixels, width, height)|{
         (Frame::from_rgba_speed(*width, *height, pixels, 10), (*width, *height))
     }).collect::<Vec<_>>().into_iter().unzip();
