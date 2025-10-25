@@ -5,8 +5,9 @@ use genanki_rs::{Deck, Field, Model, Note, Package, Template};
 
 pub fn create_deck(
     gif_paths: &[PathBuf],
-    mountain_names: &[&str],
+    mountain_names: &[String],
     target_file: &Path,
+    deck_name: &str
 ) -> Result<()> {
     let anki_model = Model::new(
         598447264,
@@ -31,10 +32,10 @@ pub fn create_deck(
         .zip(mountain_names)
         .map(move |(path, name)| {
             let anki_model = anki_model.clone();
-            Note::new(anki_model, vec![*name, &format!(r#"<img src="{path}" />"#)])
+            Note::new(anki_model, vec![name, &format!(r#"<img src="{path}" />"#)])
         });
 
-    let mut deck = Deck::new(123456789, "Mountains", "Swiss Mountains 3D renders");
+    let mut deck = Deck::new(123456789, deck_name, "Swiss Mountains 3D renders");
     for note in notes {
         deck.add_note(note?);
     }

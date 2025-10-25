@@ -23,7 +23,7 @@ on Nixos, make sure to set `hardware.graphics.enable = true;` in your `/etc/nixo
 ```bash
 nix-shell .
 ```
-to install dependencies. For other systems, make sure you have **rust** installed. Other dependencies might be required (not tested).
+to install dependencies. For other systems, make sure you have **rust** installed. Other dependencies, suwch as `libspatialite` might be required (not tested).
 ### Building
 First we need to build the executable. We do this with
 ```

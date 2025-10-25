@@ -142,3 +142,20 @@ pub fn get_peaks() -> Vec<NamedPlace> {
         })
         .collect::<Vec<_>>()
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_get_peak() {
+        let peaks = get_peaks();
+        assert_eq!(
+            peaks
+                .iter()
+                .filter(|named_place| { named_place.name == "Niesen" })
+                .count(),
+            1,
+            "Niesen should exist exactly 1 times"
+        );
+    }
+}

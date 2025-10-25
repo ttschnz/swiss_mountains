@@ -30,6 +30,7 @@ three-d = { version = "0.18.2", features = ["headless"] }
 three-d-asset = { version = "0.9.2", features = ["gif", "png"] }
 tiff = "0.10.3"
 tokio = { version = "1.47.1", features = ["full", "macros", "sync"] }
-tokio-rusqlite = "0.6.0"
+rusqlite = {version = "0.32.1", features = ["load_extension"]}
+tokio-rusqlite = {version= "0.6.0", features = ["bundled"]}
 yuv = "0.8.6"
 zip = "4.6.0"

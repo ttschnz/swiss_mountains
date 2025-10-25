@@ -30,7 +30,7 @@ pub async fn prepare_data(
         width as f64 / (total_width as f64 * SWISSIMAGE_DATAPOINT_PER_METER) * 100f64;
 
     if !offline {
-        let semaphore = Arc::new(Semaphore::new(10));
+        let semaphore = Arc::new(Semaphore::new(2));
         let mut handles: std::vec::Vec<tokio::task::JoinHandle<Result<_>>> = vec![];
 
         // cache altitude points

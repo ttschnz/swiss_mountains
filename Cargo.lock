@@ -3688,6 +3688,7 @@ dependencies = [
  "nalgebra",
  "rayon",
  "reqwest",
+ "rusqlite",
  "serde",
  "serial_test",
  "showfile",
