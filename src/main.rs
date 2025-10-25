@@ -42,13 +42,9 @@ async fn main() -> Result<()> {
 
     let mut filtered_peaks = Vec::new();
     for peak in all_peaks {
-        if get_region(
-            (peak.easting, peak.northing),
-            region.1,
-            &regiondb_conn,
-        )
-        .await?
-        .contains(&region.0)
+        if get_region((peak.easting, peak.northing), region.1, &regiondb_conn)
+            .await?
+            .contains(&region.0)
         {
             filtered_peaks.push(peak);
         }
@@ -69,29 +65,41 @@ async fn main() -> Result<()> {
     );
 
     for peak in filtered_peaks {
-        info!("preparing data for {}", peak.name);
-        let (altitude_data, image_data) = prepare_data(
-            (peak.easting, peak.northing),
-            (peak.altitude * 2) as u32,
-            sampling_size,
-            false,
-        )
-        .await?;
+        let gif_path = temp_dir.join(format!(
+            "{}_{}_{}_{}_{}.gif",
+            peak.name.to_lowercase(),
+            peak.easting,
+            peak.northing,
+            render_size.0,
+            render_size.1
+        ));
 
-        info!("creating mesh");
-        let mesh = create_mesh(altitude_data, image_data)?;
+        if !gif_path.exists() {
+            info!("preparing data for {}", peak.name);
+            let (altitude_data, image_data) = prepare_data(
+                (peak.easting, peak.northing),
+                (peak.altitude * 2) as u32,
+                sampling_size,
+                false,
+            )
+            .await?;
 
-        let mut raw_data = Vec::new();
-        for phi in 0..360 {
-            info!("rendering mesh ({phi}/360)");
-            let image = render_mesh(&mesh, 10.0, phi as f64, render_size, &context)?;
-            let dim = (image.width() as u16, image.height() as u16);
-            raw_data.push((image.into_raw(), dim.0, dim.1));
+            info!("creating mesh");
+            let mesh = create_mesh(altitude_data, image_data)?;
+
+            let mut raw_data = Vec::new();
+            for phi in 0..360 {
+                info!("rendering mesh ({phi}/360)");
+                let image = render_mesh(&mesh, 10.0, phi as f64, render_size, &context)?;
+                let dim = (image.width() as u16, image.height() as u16);
+                raw_data.push((image.into_raw(), dim.0, dim.1));
+            }
+
+            info!("composing gif");
+            compose_gif(&mut raw_data, gif_path.as_path())?;
+        }else{
+            info!("gif for {} already exists ({:?})", peak.name, gif_path);
         }
-
-        info!("composing gif");
-        let gif_path = temp_dir.join(format!("{}.gif", peak.name.to_lowercase()));
-        compose_gif(&mut raw_data, gif_path.as_path())?;
         file_list.push(gif_path);
         peak_names.push(peak.name);
     }
