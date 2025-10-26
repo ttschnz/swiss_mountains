@@ -132,7 +132,7 @@ async fn main() -> Result<()> {
                 cli.region_name,
                 cli.region_type.to_string()
             ));
-        
+
             if let Some(parent_dir) = gif_path.parent() {
                 let _ = fs::create_dir_all(parent_dir);
             }
@@ -178,7 +178,7 @@ async fn main() -> Result<()> {
 
         info!("done");
         showfile::show_path_in_file_manager(anki_file_name.into_os_string());
-    }else{
+    } else {
         info!("No peaks in batch.");
     }
 

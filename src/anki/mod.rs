@@ -7,7 +7,7 @@ pub fn create_deck(
     gif_paths: &[PathBuf],
     mountain_names: &[String],
     target_file: &Path,
-    deck_name: &str
+    deck_name: &str,
 ) -> Result<()> {
     let anki_model = Model::new(
         598447264,
