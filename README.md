@@ -12,7 +12,7 @@ A rust project that accesses [swissALTI3D](https://opendata.swiss/de/dataset/swi
   - [x] speed up python
   - [x] Oxidize (rewrite in rust)
 - [x] Export to anki-flashcards
-- [ ] Dockerize
+- [x] Dockerize
 - [ ] web-api
 - [ ] fix table locks
 - [ ] Documentation, inline comments
