@@ -96,7 +96,7 @@ enum Status {
     Offiziell,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct NamedPlace {
     #[serde(rename = "OBJEKTART")]
     object_type: ObjectType,
@@ -113,6 +113,7 @@ pub struct NamedPlace {
 }
 
 impl NamedPlace {
+    #[allow(unused)]
     pub fn distance_to(&self, other_easting: i64, other_northing: i64) -> f64 {
         (((self.easting as i64 - other_easting).wrapping_pow(2)
             + (self.northing as i64 - other_northing).wrapping_pow(2)) as f64)

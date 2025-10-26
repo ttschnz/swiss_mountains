@@ -1,4 +1,4 @@
-use std::env;
+use std::{env};
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -6,18 +6,29 @@ use std::path::PathBuf;
 use anyhow::Result;
 use rusqlite::LoadExtensionGuard;
 use tokio_rusqlite::{Connection};
-
+use clap::ValueEnum;
 // Download db (gpkg.zip) from https://www.swisstopo.admin.ch/en/landscape-model-swissboundaries3d
 // and run SELECT InitSpatialMetaData() on it
 
 static DB: &[u8] = include_bytes!("swissBOUNDARIES3D_1_5_LV95_LN02.gpkg");
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+#[clap(rename_all = "kebab_case")]
 pub enum RegionType{
     LANDESGEBIET,
     KANTONSGEBIET,
     BEZIRKSGEBIET,
     HOHEITSGEBIET,
+}
+impl ToString for RegionType{
+    fn to_string(&self) -> String {
+        match self{
+            RegionType::LANDESGEBIET => "landesgebiet".to_string(),
+            RegionType::KANTONSGEBIET => "kantonsgebiet".to_string(),
+            RegionType::BEZIRKSGEBIET => "bezirksgebiet".to_string(),
+            RegionType::HOHEITSGEBIET => "hoheitsgebiet".to_string(),
+        }
+    }
 }
 impl RegionType {
     fn get_table_name(&self)->String{

@@ -34,3 +34,5 @@ rusqlite = {version = "0.32.1", features = ["load_extension"]}
 tokio-rusqlite = {version= "0.6.0", features = ["bundled"]}
 yuv = "0.8.6"
 zip = "4.6.0"
+clap = { version = "4.5.50", features = ["derive"] }
+clap-num = "1.2.0"
