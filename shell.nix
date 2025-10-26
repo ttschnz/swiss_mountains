@@ -10,6 +10,7 @@ pkgs.mkShell {
     pkgs.gcc            # compiler for C dependencies
     pkgs.makeWrapper    # sometimes needed for wrapping build tools
     pkgs.libspatialite  # used to match swissboundaries (this lib is included in the build)
+    pkgs.cmake
     
     # Needed for three-d / winit / glutin headless context
     pkgs.mesa

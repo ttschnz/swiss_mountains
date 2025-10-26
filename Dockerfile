@@ -10,10 +10,10 @@ RUN touch ./src/lib.rs
 
 COPY Cargo.toml Cargo.lock build.rs ./
 
-RUN nix-shell --run "nix-shell -p cmake --run \"cargo build --release\""
+RUN nix-shell --run "cargo build --release"
 
 COPY src ./src
 
 RUN nix-shell --run "cargo build --release"
 
-CMD ["nix-shell", "--run", "cargo run --release"]
+CMD ["nix-shell", "--run", "/app/target/release/swiss_mountains_rs -- -r Bern"]

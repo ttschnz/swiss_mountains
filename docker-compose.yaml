@@ -1,6 +1,6 @@
 services:
   swiss_mountains:
-    image: swiss_mountains:latest
+    build: .
     devices:
       - /dev/dri:/dev/dri
       - /dev/kfd:/dev/kfd
