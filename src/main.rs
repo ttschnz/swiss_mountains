@@ -35,7 +35,7 @@ struct Cli {
         help = "Region name that should be processed"
     )]
     region_name: String,
-    #[arg(short='t', long="region-type", default_value_t=RegionType::KANTONSGEBIET, help="Type of region")]
+    #[arg(short='t', long="region-type", default_value_t=RegionType::Kantonsgebiet, help="Type of region")]
     region_type: RegionType,
     #[arg(
         short = 's',
@@ -105,7 +105,7 @@ async fn main() -> Result<()> {
         (Some(batch_index), Some(batch_size)) => filtered_peaks
             .chunks(batch_size)
             .nth(batch_index)
-            .map(|chunk| Vec::from(chunk)),
+            .map(Vec::from),
         _ => Some(filtered_peaks),
     };
 
@@ -130,7 +130,7 @@ async fn main() -> Result<()> {
                 peak.easting,
                 peak.northing,
                 cli.region_name,
-                cli.region_type.to_string()
+                cli.region_type
             ));
 
             if let Some(parent_dir) = gif_path.parent() {

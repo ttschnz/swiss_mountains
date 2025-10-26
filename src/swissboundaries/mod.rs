@@ -15,28 +15,29 @@ static DB: &[u8] = include_bytes!("swissBOUNDARIES3D_1_5_LV95_LN02.gpkg");
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 #[clap(rename_all = "kebab_case")]
 pub enum RegionType {
-    LANDESGEBIET,
-    KANTONSGEBIET,
-    BEZIRKSGEBIET,
-    HOHEITSGEBIET,
+    Landesgebiet,
+    Kantonsgebiet,
+    Bezirksgebiet,
+    Hoheitsgebiet,
 }
-impl ToString for RegionType {
-    fn to_string(&self) -> String {
-        match self {
-            RegionType::LANDESGEBIET => "landesgebiet".to_string(),
-            RegionType::KANTONSGEBIET => "kantonsgebiet".to_string(),
-            RegionType::BEZIRKSGEBIET => "bezirksgebiet".to_string(),
-            RegionType::HOHEITSGEBIET => "hoheitsgebiet".to_string(),
-        }
+impl std::fmt::Display for RegionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {   
+        let str =match self {
+            RegionType::Landesgebiet => "landesgebiet".to_string(),
+            RegionType::Kantonsgebiet => "kantonsgebiet".to_string(),
+            RegionType::Bezirksgebiet => "bezirksgebiet".to_string(),
+            RegionType::Hoheitsgebiet => "hoheitsgebiet".to_string(),
+        };
+        write!(f, "{}", str)
     }
 }
 impl RegionType {
     fn get_table_name(&self) -> String {
         match self {
-            RegionType::LANDESGEBIET => "tlm_landesgebiet".to_string(),
-            RegionType::KANTONSGEBIET => "tlm_kantonsgebiet".to_string(),
-            RegionType::BEZIRKSGEBIET => "tlm_bezirksgebiet".to_string(),
-            RegionType::HOHEITSGEBIET => "tlm_hoheitsgebiet".to_string(),
+            RegionType::Landesgebiet => "tlm_landesgebiet".to_string(),
+            RegionType::Kantonsgebiet => "tlm_kantonsgebiet".to_string(),
+            RegionType::Bezirksgebiet => "tlm_bezirksgebiet".to_string(),
+            RegionType::Hoheitsgebiet => "tlm_hoheitsgebiet".to_string(),
         }
     }
 }
@@ -119,7 +120,7 @@ mod test {
     async fn test_query() {
         let path = dump_db_to_tempfile().unwrap();
         let connection = open_connection(path).await.unwrap();
-        let regions = get_region((2616381, 1166112), RegionType::HOHEITSGEBIET, &connection)
+        let regions = get_region((2616381, 1166112), RegionType::Hoheitsgebiet, &connection)
             .await
             .unwrap();
         assert_eq!(
@@ -127,7 +128,7 @@ mod test {
             vec!["Reichenbach im Kandertal"],
             "regions of type 'HOHEITSGEBIET' don't match "
         );
-        let regions = get_region((2616381, 1166112), RegionType::BEZIRKSGEBIET, &connection)
+        let regions = get_region((2616381, 1166112), RegionType::Bezirksgebiet, &connection)
             .await
             .unwrap();
         assert_eq!(
@@ -135,7 +136,7 @@ mod test {
             vec!["Frutigen-Niedersimmental"],
             "regions of type 'BEZIRKSGEBIET' don't match "
         );
-        let regions = get_region((2616381, 1166112), RegionType::KANTONSGEBIET, &connection)
+        let regions = get_region((2616381, 1166112), RegionType::Kantonsgebiet, &connection)
             .await
             .unwrap();
         assert_eq!(
@@ -143,7 +144,7 @@ mod test {
             vec!["Bern"],
             "regions of type 'KANTONSGEBIET' don't match "
         );
-        let regions = get_region((2616381, 1166112), RegionType::LANDESGEBIET, &connection)
+        let regions = get_region((2616381, 1166112), RegionType::Landesgebiet, &connection)
             .await
             .unwrap();
         assert_eq!(
