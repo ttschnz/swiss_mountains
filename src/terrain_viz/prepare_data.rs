@@ -10,11 +10,15 @@ use tokio::sync::Semaphore;
 const SWISSALTI3D_DATAPOINT_PER_METER: f64 = 0.5;
 const SWISSIMAGE_DATAPOINT_PER_METER: f64 = 0.5;
 
+static SQLITE_SWISSIMAGE_PERMIT: Semaphore = Semaphore::const_new(1);
+static SQLITE_SWISSALTI3D_PERMIT: Semaphore = Semaphore::const_new(1);
+
 pub async fn prepare_data(
     peak_coordinates: (u32, u32),
     radius: u32,
     width: usize,
     offline: bool,
+    download_threads: usize,
 ) -> Result<(AltitudeData, ImageData)> {
     let peak_north = cmp::min(peak_coordinates.0, peak_coordinates.1) as i32;
     let peak_east = cmp::max(peak_coordinates.0, peak_coordinates.1) as i32;
@@ -30,18 +34,21 @@ pub async fn prepare_data(
         width as f64 / (total_width as f64 * SWISSIMAGE_DATAPOINT_PER_METER) * 100f64;
 
     if !offline {
-        let semaphore = Arc::new(Semaphore::new(2));
+        let fetching_semaphore = Arc::new(Semaphore::new(download_threads));
         let mut handles: std::vec::Vec<tokio::task::JoinHandle<Result<_>>> = vec![];
 
         // cache altitude points
         let swissalti3d_url_list = swissalti3d::fetch::get_url_list(&bounding_box)?;
         debug!("prefetching {} height files", swissalti3d_url_list.len());
         for url in swissalti3d_url_list {
-            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let fetching_permit = fetching_semaphore.clone().acquire_owned().await?;
             let url = url.clone();
             handles.push(tokio::spawn(async {
-                let _permit = permit;
-                swissalti3d::fetch::prefetch(url).await?;
+                let _permit = fetching_permit;
+                if let Some((data, reference)) = swissalti3d::fetch::prefetch(url).await? {
+                    let _writing_permit = SQLITE_SWISSALTI3D_PERMIT.acquire().await?;
+                    swissalti3d::cache::write_to_cache(data, &reference).await?;
+                }
                 Ok(())
             }));
         }
@@ -50,11 +57,14 @@ pub async fn prepare_data(
         let swissimage_url_list = swissimage::fetch::get_url_list(&bounding_box)?;
         debug!("prefetching {} color files", swissimage_url_list.len());
         for url in swissimage_url_list {
-            let permit = semaphore.clone().acquire_owned().await.unwrap();
+            let fetching_permit = fetching_semaphore.clone().acquire_owned().await.unwrap();
             let url = url.clone();
             handles.push(tokio::spawn(async {
-                let _permit = permit;
-                swissimage::fetch::prefetch(url).await?;
+                let _permit = fetching_permit;
+                if let Some((data, reference)) = swissimage::fetch::prefetch(url).await? {
+                    let _writing_permit = SQLITE_SWISSIMAGE_PERMIT.acquire().await?;
+                    swissimage::cache::write_to_cache(&data, &reference).await?;
+                }
                 Ok(())
             }));
         }

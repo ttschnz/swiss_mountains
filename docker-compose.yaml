@@ -3,11 +3,9 @@ services:
     build: .
     devices:
       - /dev/dri:/dev/dri
-      - /dev/kfd:/dev/kfd
-      - /dev/dri/renderD128:/dev/dri/renderD128
     environment:
       - DISPLAY=${DISPLAY}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ./cache:/app/cache
-      - /run/media/tim/T9/mountain_cache/gifs/:/app/gifs
+      - ./gifs:/app/gifs

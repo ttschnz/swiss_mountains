@@ -41,12 +41,12 @@ fn ycbcr_to_rgb(y: u8, cb: u8, cr: u8) -> (u8, u8, u8) {
     )
 }
 
-pub async fn prefetch(url: String) -> Result<()> {
+pub async fn prefetch(url: String) -> Result<Option<(Vec<(u32, u32, u8, u8, u8)>, String)>> {
     let reference = url_to_ref(&url).ok_or(Error::msg("invalid url"))?;
 
     // check if the url is already cached
     if cache::check_cache(&reference).await? {
-        return Ok(());
+        return Ok(None);
     }
     let bounding_box = BoundingBox::get_box_covered(&url)?;
 
@@ -93,7 +93,7 @@ pub async fn prefetch(url: String) -> Result<()> {
         }
     }
 
-    cache::write_to_cache(&rgb_pixels, &reference).await?;
+    //cache::write_to_cache(&rgb_pixels, &reference).await?;
 
-    Ok(())
+    Ok(Some((rgb_pixels, reference.to_string())))
 }

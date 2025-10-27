@@ -46,7 +46,7 @@ struct Cli {
     sampling_size: usize,
     #[arg(
         long = "download_thread_count",
-        default_value_t = 2,
+        default_value_t = 10,
         help = "Amount of threads allowed to download content at the same time"
     )]
     download_threads: usize,
@@ -65,6 +65,13 @@ struct Cli {
     batch_index: Option<usize>,
     #[arg(short='l', long="log_level", help="Verbosity", default_value_t=log::LevelFilter::Info)]
     log_level: log::LevelFilter,
+    #[arg(
+        short = 'o',
+        long = "offline",
+        help = "Prevent prefetch: this skips prefetch and works with the data we have",
+        default_value_t = false
+    )]
+    offline: bool,
 }
 
 #[tokio::main]
@@ -142,7 +149,8 @@ async fn main() -> Result<()> {
                     (peak.easting, peak.northing),
                     (peak.altitude * 2) as u32,
                     cli.sampling_size,
-                    false,
+                    cli.offline,
+                    cli.download_threads,
                 )
                 .await?;
 

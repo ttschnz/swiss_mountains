@@ -14,7 +14,7 @@ A rust project that accesses [swissALTI3D](https://opendata.swiss/de/dataset/swi
 - [x] Export to anki-flashcards
 - [x] Dockerize
 - [ ] web-api
-- [ ] fix table locks
+- [x] fix table locks
 - [ ] Documentation, inline comments
 
 ## Building Instructions

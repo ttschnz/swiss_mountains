@@ -22,12 +22,12 @@ pub fn get_url_list(searching_box: &BoundingBox) -> Result<Vec<String>> {
     Ok(url_list)
 }
 
-pub async fn prefetch(url: String) -> Result<()> {
+pub async fn prefetch(url: String) -> Result<Option<(Vec<(u32, u32, f64)>, String)>> {
     let reference = url_to_ref(&url).ok_or(Error::msg("invalid url"))?;
 
     // check if the url is already cached
     if cache::check_cache(&reference).await? {
-        return Ok(());
+        return Ok(None);
     }
 
     // download reference
@@ -62,9 +62,9 @@ pub async fn prefetch(url: String) -> Result<()> {
 
         data.push((x, y, z));
     }
-    cache::write_to_cache(data, &reference).await?;
+    //cache::write_to_cache(data, &reference).await?;
 
-    Ok(())
+    Ok(Some((data, reference.to_string())))
 }
 
 // swissalti3d.fetch.prefetch

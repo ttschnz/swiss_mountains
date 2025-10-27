@@ -16,4 +16,4 @@ COPY src ./src
 
 RUN nix-shell --run "cargo build --release"
 
-CMD ["nix-shell", "--run", "/app/target/release/swiss_mountains_rs -- -r Bern"]
+CMD ["nix-shell", "--run", "/app/target/release/swiss_mountains_rs -- --region Bern"]
