@@ -32,11 +32,26 @@ struct Cli {
     #[arg(
         short = 'r',
         long = "region",
-        help = "Region name that should be processed"
+        help = "Region name that should be processed",
+        conflicts_with_all = ["peak_x", "peak_y"]
     )]
-    region_name: String,
-    #[arg(short='t', long="region-type", default_value_t=RegionType::Kantonsgebiet, help="Type of region")]
+    region_name: Option<String>,
+    #[arg(short='t', long="region-type", default_value_t=RegionType::Kantonsgebiet, help="Type of region", conflicts_with_all = ["peak_x", "peak_y"])]
     region_type: RegionType,
+    #[arg(
+        long = "peak_x",
+        help = "X-coordinate of a single peak to render",
+        conflicts_with_all = ["region_name", "region_type"],
+        requires="peak_x"
+    )]
+    peak_x: Option<u32>,
+    #[arg(
+        long = "peak_y",
+        help = "Y-coordinate of a single peak to render",
+        conflicts_with_all = ["region_name", "region_type"],
+        requires="peak_x"
+    )]
+    peak_y: Option<u32>,
     #[arg(
         short = 's',
         long = "sampling",
@@ -79,8 +94,8 @@ struct Cli {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let anki_file_name = format!("mountains_{}.apkg", cli.region_name);
-    let deck_name = format!("Mountains::{}", cli.region_name);
+    let mut region_name = String::new();
+    let mut region_type = RegionType::Kantonsgebiet;
 
     // --- Initialise logging
     let mut builder = Builder::new();
@@ -91,40 +106,67 @@ async fn main() -> Result<()> {
     // --- headless GL context: singleton, cannot be created multiple times per program ---
     let context = HeadlessContext::new()?;
 
-    let all_peaks = get_peaks();
+    let mut all_peaks = get_peaks();
+    let mut peaks_to_process = None;
+
     let regiondb_conn =
         swissboundaries::open_connection(swissboundaries::dump_db_to_tempfile()?).await?;
 
-    let mut filtered_peaks = Vec::new();
-    for peak in all_peaks {
-        if get_region(
-            (peak.easting, peak.northing),
-            cli.region_type,
-            &regiondb_conn,
-        )
-        .await?
-        .contains(&cli.region_name)
-        {
-            filtered_peaks.push(peak);
+    if let Some(peak_coords) = cli.peak_x.zip(cli.peak_y) {
+        region_name = get_region(peak_coords, RegionType::Kantonsgebiet, &regiondb_conn)
+            .await?
+            .get(0)
+            .ok_or(anyhow::Error::msg("Peak not in any region"))?
+            .to_owned();
+        region_type = RegionType::Kantonsgebiet;
+        all_peaks.sort_by_key(|peak| {
+            peak.distance_to(peak_coords.0.into(), peak_coords.1.into())
+                .round() as i64
+        });
+        let closest_peak = all_peaks
+            .first()
+            .ok_or(anyhow::Error::msg("No peak found at coordinates"))?
+            .to_owned();
+
+        peaks_to_process = Some(vec![closest_peak]);
+    } else if let Some(cli_region_name) = cli.region_name {
+        region_name = cli_region_name;
+        region_type = cli.region_type;
+
+        let mut filtered_peaks = Vec::new();
+        for peak in all_peaks {
+            if get_region(
+                (peak.easting, peak.northing),
+                cli.region_type,
+                &regiondb_conn,
+            )
+            .await?
+            .contains(&region_name)
+            {
+                filtered_peaks.push(peak);
+            }
         }
+
+        peaks_to_process = match (cli.batch_index, cli.batch_size) {
+            (Some(batch_index), Some(batch_size)) => filtered_peaks
+                .chunks(batch_size)
+                .nth(batch_index)
+                .map(Vec::from),
+            _ => Some(filtered_peaks),
+        };
     }
 
-    let filtered_peaks_chunk = match (cli.batch_index, cli.batch_size) {
-        (Some(batch_index), Some(batch_size)) => filtered_peaks
-            .chunks(batch_size)
-            .nth(batch_index)
-            .map(Vec::from),
-        _ => Some(filtered_peaks),
-    };
+    let anki_file_name = format!("mountains_{}.apkg", region_name);
+    let deck_name = format!("Mountains::{}", region_name);
 
-    if let Some(peaks_to_process) = filtered_peaks_chunk {
-        let gif_dir = current_dir()?.join("gifs").join(&cli.region_name);
+    if let Some(peaks_to_process) = peaks_to_process {
+        let gif_dir = current_dir()?.join("gifs").join(&region_name);
         let mut file_list = vec![];
         let mut peak_names = vec![];
         info!(
             "{} selected peaks in region {}.\n{}",
             peaks_to_process.len(),
-            cli.region_name,
+            region_name,
             peaks_to_process
                 .iter()
                 .map(|peak| peak.name.as_str())
@@ -137,8 +179,8 @@ async fn main() -> Result<()> {
                 peak.name.to_lowercase(),
                 peak.easting,
                 peak.northing,
-                cli.region_name,
-                cli.region_type
+                region_name,
+                region_type
             ));
 
             if let Some(parent_dir) = gif_path.parent() {
