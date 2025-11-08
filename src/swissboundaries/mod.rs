@@ -21,8 +21,8 @@ pub enum RegionType {
     Hoheitsgebiet,
 }
 impl std::fmt::Display for RegionType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {   
-        let str =match self {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
             RegionType::Landesgebiet => "landesgebiet".to_string(),
             RegionType::Kantonsgebiet => "kantonsgebiet".to_string(),
             RegionType::Bezirksgebiet => "bezirksgebiet".to_string(),
