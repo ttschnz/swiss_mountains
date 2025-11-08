@@ -53,7 +53,8 @@ struct Cli {
     #[arg(
         short = 'n',
         long = "batch_size",
-        help = "Amount of mountains that should be processed"
+        help = "Amount of mountains that should be processed",
+        requires = "batch_index"
     )]
     batch_size: Option<usize>,
     #[arg(
