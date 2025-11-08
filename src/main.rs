@@ -8,6 +8,7 @@ mod utils;
 
 use std::env::current_dir;
 use std::fs;
+use std::process::{Child, Command};
 
 use crate::anki::create_deck;
 use crate::swissnames::get_peaks;
@@ -73,6 +74,12 @@ struct Cli {
         default_value_t = false
     )]
     offline: bool,
+    #[arg(
+        short = 'v',
+        long = "virtual",
+        help = "If this flag is enabled, the package will try to create an own virtual x11 server. Use in Docker."
+    )]
+    virt: bool,
 }
 
 #[tokio::main]
@@ -89,6 +96,23 @@ async fn main() -> Result<()> {
     builder.init();
 
     // --- headless GL context: singleton, cannot be created multiple times per program ---
+    let xvbf:Option<(Child, Child)> = if cli.virt {
+        let xvbf = Command::new("Xvfb")
+            .arg("-screen")
+            .arg("0")
+            .arg("1920x1080x24")
+            .spawn()?;
+        std::env::set_var("DISPLAY", ":1");
+        let xrandr = Command::new("xrandr")
+            .spawn()?;
+
+        Some((xvbf, xrandr))
+        // Xvfb :1 -screen 0 1920x1080x24
+        // export DISPLAY=:1
+    } else {
+        None
+     };
+
     let context = HeadlessContext::new()?;
 
     let all_peaks = get_peaks();
@@ -189,6 +213,10 @@ async fn main() -> Result<()> {
         showfile::show_path_in_file_manager(anki_file_name.into_os_string());
     } else {
         info!("No peaks in batch.");
+    }
+    if let Some((mut xvbf, mut xrandr)) = xvbf {
+        xvbf.kill()?;
+        xrandr.kill()?;
     }
 
     Ok(())

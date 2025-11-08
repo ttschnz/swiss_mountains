@@ -25,6 +25,10 @@ pkgs.mkShell {
     pkgs.xorg.libXrandr
     pkgs.xorg.libXinerama
     pkgs.xorg.libxcb
+
+    # Virtual display server
+    pkgs.xorg.xvfb
+    pkgs.xorg.xrandr
   ];
   LD_LIBRARY_PATH="${pkgs.mesa}/lib:${pkgs.libGL}/lib:${pkgs.libspatialite}/lib:$LD_LIBRARY_PATH";
 
